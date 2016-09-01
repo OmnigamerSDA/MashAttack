@@ -15,6 +15,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using System.Windows.Forms.DataVisualization.Charting;
+using OxyPlot;
+using OxyPlot.Series;
 
 
 namespace MashAttack
@@ -36,12 +39,14 @@ namespace MashAttack
         bool isDown;
         bool isUp;
         int countdown;
+        public PlotModel myModel;
 
         //private delegate void UpdateStatsDel();
 
         public MainWindow()
         {
             InitializeComponent();
+            //OxyPlot.Model
             myTimer = new DispatcherTimer(DispatcherPriority.Normal);
             myTimer.Interval = new TimeSpan(0, 0, 0, 10, 0) ;
             myTimer.Tick += new EventHandler(TimeOver);
@@ -55,11 +60,37 @@ namespace MashAttack
             first = true;
             mystop = new System.Diagnostics.Stopwatch();
             prior = 0;
+            //myModel = new PlotModel { Title = "Mashing Rate" };
         }
 
         private void SecondElapsed(object sender, EventArgs e)
         {
             timerLabel.Content = String.Format("{0}", countdown--);
+        }
+
+        private void PlotResults()
+        {
+            PlotModel tmp = new PlotModel { Title = "Mash Rate" };
+            LineSeries mySeries = new LineSeries { StrokeThickness = 2, Color=OxyColors.PaleVioletRed, MarkerSize = 3, MarkerStroke = OxyColors.ForestGreen, MarkerType = MarkerType.Plus };
+            //myModel.Clear();
+            int i;
+            long test = 0;
+            for (i = 0; i < mashes.count; i++)
+            {
+                test = mashes.GetMash(i);
+                Console.WriteLine(test);
+                mySeries.Points.Add(new OxyPlot.DataPoint(i, test));
+                
+            }
+
+            tmp.Series.Add(mySeries);
+            chart.Model = tmp;
+            chart.UpdateLayout();
+            chart.Visibility = Visibility.Visible;
+            chart.IsEnabled = true;
+            
+            //myModel.
+            //chart.
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -108,6 +139,8 @@ namespace MashAttack
 
             medRate.Content = 1000.0 / mymed;
             medTime.Content = mymed;
+
+            PlotResults();
         }
 
         private string FormatStrings(double num)
@@ -164,6 +197,11 @@ namespace MashAttack
         private void updateButton_Click(object sender, RoutedEventArgs e)
         {
             UpdateStats();
+        }
+
+        private void plotButton_Click(object sender, RoutedEventArgs e)
+        {
+            PlotResults();
         }
     }
 }

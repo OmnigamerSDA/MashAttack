@@ -57,6 +57,10 @@ namespace MashAttack
                 slowest = total;
         }
 
+        public long GetMash(int index)
+        {
+            return mashes.ElementAtOrDefault(index).total;
+        }
         private int CompareMash(Mash mashA, Mash mashB)
         {
             if (mashA == null)
