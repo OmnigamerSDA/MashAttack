@@ -48,6 +48,22 @@ namespace MashAttack
             UpdateBests(total);
         }
 
+        public void AddMash(long down, long up)
+        {
+            long total = down+up;
+
+            Mash myMash = new Mash();
+            myMash.Set(down, up, total, count);
+            mashes.Add(myMash);
+
+            count++;
+            totalTime += total;
+            downTotal += down;
+            upTotal += up;
+
+            UpdateBests(total);
+        }
+
         private void UpdateBests(long total)
         {
             if (total < fastest)
@@ -90,7 +106,36 @@ namespace MashAttack
         {
             mashes.Sort(CompareMash);
 
-            return mashes[count / 2].total;
+            long myVal = mashes[count / 2].total;
+
+            mashes.Sort(Reorder);
+
+            return myVal;
+        }
+
+        private int Reorder(Mash mashA, Mash mashB)
+        {
+            if (mashA == null)
+            {
+                if (mashB == null)
+                    return 0;
+                else
+                    return -1;
+            }
+            else
+            {
+                if (mashB == null)
+                    return 1;
+                else
+                {
+                    if (mashA.sequence > mashB.sequence)
+                        return 1;
+                    else if (mashA.sequence == mashB.sequence)
+                        return 0;
+                    else
+                        return -1;
+                }
+            }
         }
     }
 }

@@ -29,11 +29,12 @@ namespace MashAttack
             sequence = newnum;
         }
 
-        public void Set(long newDown, long newUp, long newTotal)
+        public void Set(long newDown, long newUp, long newTotal, int newSequence)
         {
             down = newDown;
             up = newUp;
             total = newTotal;
+            sequence = newSequence;
         }
     }
 }
