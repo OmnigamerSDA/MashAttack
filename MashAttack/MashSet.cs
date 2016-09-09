@@ -75,7 +75,10 @@ namespace MashAttack
 
         public long GetMash(int index)
         {
-            return mashes.ElementAtOrDefault(index).total;
+            if (count != 0)
+                return mashes.ElementAtOrDefault(index).total;
+            else
+                return 1;
         }
         private int CompareMash(Mash mashA, Mash mashB)
         {
@@ -104,13 +107,18 @@ namespace MashAttack
 
         public long GetMedian()
         {
-            mashes.Sort(CompareMash);
+            if (count != 0)
+            {
+                mashes.Sort(CompareMash);
 
-            long myVal = mashes[count / 2].total;
+                long myVal = mashes[count / 2].total;
 
-            mashes.Sort(Reorder);
+                mashes.Sort(Reorder);
 
-            return myVal;
+                return myVal;
+            }
+            else
+                return 1;
         }
 
         private int Reorder(Mash mashA, Mash mashB)

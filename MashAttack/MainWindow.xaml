@@ -6,7 +6,7 @@
         KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp">
     <Grid KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp">
         <oxy:PlotView x:Name="chart" Margin="10,268,10,10"/>
-        <Button x:Name="startButton" Content="10 sec" Margin="0,180,10,0" VerticalAlignment="Top" Tag="startButton" Height="38" Click="startButton_Click" KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp" HorizontalAlignment="Right" Width="98"/>
+        <Button x:Name="startButton" Content="Start" Margin="0,180,10,0" VerticalAlignment="Top" Tag="startButton" Height="38" Click="startButton_Click" KeyDown="Grid_KeyDown" KeyUp="Grid_KeyUp" HorizontalAlignment="Right" Width="98"/>
         <Grid Height="212" Margin="10,41,0,0" VerticalAlignment="Top" ShowGridLines="True" HorizontalAlignment="Left" Width="361">
             <Grid.RowDefinitions>
                 <RowDefinition Height="26*"/>
@@ -31,8 +31,8 @@
             <Label Content="Median Rate" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Grid.Row="6"/>
             <Label Content="Hertz" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Column="1" Margin="12,0,0,0" Tag=""/>
             <Label x:Name="avgHz" Content="Average Rate" HorizontalAlignment="Left" Margin="12,5,0,0" VerticalAlignment="Top" Grid.Row="1" RenderTransformOrigin="-0.023,-0.936" Grid.Column="1" Tag="avgHz"/>
-            <Label x:Name="avgUp" Content="Average Up" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Top" Grid.Row="2" Grid.Column="2" Tag="avgUp"/>
-            <Label x:Name="avgDown" Content="Average Down" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="2" Margin="10,0,0,0" Tag="avgDown"/>
+            <Label x:Name="avgUp" Content="Average Up" HorizontalAlignment="Left" Margin="10,3,0,0" VerticalAlignment="Top" Grid.Row="2" Grid.Column="1" Tag="avgUp"/>
+            <Label x:Name="avgDown" Content="Average Down" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="1" Margin="10,0,0,0" Tag="avgDown"/>
             <Label x:Name="minRate" Content="Min Rate" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="4" Grid.Column="1" Margin="12,0,0,0" Tag="minHz"/>
             <Label x:Name="maxRate" Content="Max Rate" HorizontalAlignment="Left" Margin="12,4,0,0" VerticalAlignment="Top" Grid.Row="5" Grid.Column="1" Tag="maxHz"/>
             <Label x:Name="medRate" Content="Median Rate" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="6" Grid.Column="1" Margin="12,0,0,0" Tag="medHz"/>
@@ -41,14 +41,16 @@
             <Label x:Name="minTime" Content="Min Rate" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="4" Grid.Column="2" Margin="10,0,0,0" Tag="minTime"/>
             <Label x:Name="maxTime" Content="Max Rate" HorizontalAlignment="Left" Margin="10,4,0,0" VerticalAlignment="Top" Grid.Row="5" Grid.Column="2" Tag="maxTime"/>
             <Label x:Name="medTime" Content="Median Rate" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="6" Grid.Column="2" Margin="10,0,0,0" Tag="medTime"/>
+            <Label x:Name="avgUp2" Content="" HorizontalAlignment="Left" Margin="10,3,0,0" VerticalAlignment="Top" Grid.Row="2" Grid.Column="2" Tag="avgUp" Width="80"/>
+            <Label x:Name="avgDown2" Content="" HorizontalAlignment="Left" VerticalAlignment="Top" Grid.Row="3" Grid.Column="2" Tag="avgDown" Margin="10,0,0,0" Width="80"/>
         </Grid>
         <Rectangle x:Name="statusBar" Height="15" Margin="10,10,10,0" VerticalAlignment="Top" Stroke="Red" Fill="Red" Tag="statusBar"/>
         <Label x:Name="timeLabel" Content="Label" Margin="0,154,32,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="49"/>
-        <Label x:Name="timerLabel" Content="Label" Margin="0,113,12,0" VerticalAlignment="Top" FontSize="32" HorizontalAlignment="Right" Width="96"/>
+        <Label x:Name="timerLabel" Content="Label" Margin="0,99,12,0" VerticalAlignment="Top" FontSize="32" HorizontalAlignment="Right" Width="96"/>
         <Button x:Name="plotButton" Content="Plot" Margin="0,233,12,0" VerticalAlignment="Top" Click="plotButton_Click" HorizontalAlignment="Right" Width="96"/>
         <ComboBox x:Name="comBox" HorizontalAlignment="Left" Height="38" Margin="412,39,0,0" VerticalAlignment="Top" Width="101"/>
         <ComboBox x:Name="configBox" HorizontalAlignment="Left" Height="38" Margin="545,39,0,0" VerticalAlignment="Top" Width="133"/>
-        <TextBox x:Name="statusBox" HorizontalAlignment="Left" Height="154" Margin="412,99,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="266" IsReadOnly="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Text="testing"/>
+        <TextBox x:Name="statusBox" HorizontalAlignment="Left" Height="154" Margin="412,99,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="266" IsReadOnly="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
         <Button x:Name="connectButton" Content="Connect" HorizontalAlignment="Left" Height="36" Margin="704,41,0,0" VerticalAlignment="Top" Width="96" Click="connectButton_Click"/>
     </Grid>
 </Window>

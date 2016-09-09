@@ -20,6 +20,7 @@ using OxyPlot;
 using OxyPlot.Series;
 using System.IO.Ports;
 using System.IO;
+using OxyPlot.Axes;
 
 namespace MashAttack
 {
@@ -32,6 +33,7 @@ namespace MashAttack
         DispatcherTimer updateTimer;
         bool mashEnabled;
         MashSet mashes;
+        MashSet mashes2;
         bool first;
         System.Diagnostics.Stopwatch mystop;
         long prior;
@@ -44,8 +46,10 @@ namespace MashAttack
         const bool kb_mode = false;
         const int BAUD_RATE = 115200;
         bool timeout = false;
-        const int PERIOD = 1;
+        const int PERIOD = 2;
         long downval = 0;
+        long downval2 = 0;
+        bool onebutton = true;
 
         delegate void SetStatusCallback(string text);
 
@@ -79,11 +83,23 @@ namespace MashAttack
             //myTimer.SynchronizingObject = (System.ComponentModel.ISynchronizeInvoke)this.avgHz;
             mashEnabled = false;
             mashes = new MashSet();
+            mashes2 = new MashSet();
             first = true;
             mystop = new System.Diagnostics.Stopwatch();
             prior = 0;
             updatePortList();
             //myModel = new PlotModel { Title = "Mashing Rate" };
+
+            configBox.Items.Insert(0, "10s 1B");
+            configBox.Items.Insert(1, "5s 1B");
+            configBox.Items.Insert(2, "30s 1B");
+
+            configBox.Items.Insert(3, "10s 2B");
+            configBox.Items.Insert(4, "5s 2B");
+            configBox.Items.Insert(5, "30s 2B");
+
+            configBox.SelectedIndex = 0;
+
         }
 
         void updatePortList()
@@ -103,14 +119,61 @@ namespace MashAttack
 
             Command(START);//Write out control data to Arduino
             Status("Start signal sent.");
+
+            switch (configBox.SelectedIndex)
+            {
+                case 0:
+                    Command(10);
+                    Command(0xC0);
+                    onebutton = true;
+                    countdown = 10;
+                    break;
+                case 1:
+                    Command(5);
+                    Command(0xC0);
+                    onebutton = true;
+                    countdown = 5;
+                    break;
+                case 2:
+                    Command(30);
+                    Command(0xC0);
+                    onebutton = true;
+                    countdown = 30;
+                    break;
+                case 3:
+                    Command(10);
+                    Command(0xC1);
+                    onebutton = false;
+                    countdown = 10;
+                    break;
+                case 4:
+                    Command(5);
+                    Command(0xC1);
+                    onebutton = false;
+                    countdown = 5;
+                    break;
+                case 5:
+                    Command(30);
+                    Command(0xC1);
+                    onebutton = false;
+                    countdown = 30;
+                    break;
+                default:
+                    Command(10);
+                    Command(0xC0);
+                    onebutton = true;
+                    countdown = 10;
+                    break;
+            }
         }
 
         private void StartCountdown()
         {
             //mystop.Start();
+            myTimer.Interval = new TimeSpan(0, 0, 0, countdown, 0);
             myTimer.Start();
             updateTimer.Start();
-            Countdown(10);
+            Countdown(countdown);
             Bar(Brushes.Green);
         }
 
@@ -122,6 +185,7 @@ namespace MashAttack
             inputs[0] = opcode;
 
             _datPort.Write(inputs, 0, 1);//Write out control data to Arduino
+            Status(String.Format("Wrote command: {0:x}", opcode));
             return true ;
         }
 
@@ -187,16 +251,6 @@ namespace MashAttack
 
         private void Status(string v)
         {
-            //statusBox.AppendText(String.Format(v + "\n"));
-
-            // InvokeRequired required compares the thread ID of the
-            // calling thread to the thread ID of the creating thread.
-            // If these threads are different, it returns true.
-            //statusBox.Dispatcher.Invoke(
-
-            //    new SetStatusCallback(SetStatus), new object[] { v.ToString()}
-            //    );
-
             statusBox.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
                                    new Action(delegate ()
                                    {
@@ -231,10 +285,12 @@ namespace MashAttack
             {
                 case Commands.SPINUP:
                     Status("Device Ready.\n");
-                    countdown = 9;
+                    Status(String.Format("Seconds: {0}    Config: {1:x}", response[1], response[2]));
+                    //countdown = 9;
                     Bar(Brushes.Yellow);
                     mashes = new MashSet();
-                    isDown = true;
+                    mashes2 = new MashSet();
+                    //isDown = true;
                     return true;
                 case Commands.INITIATED:
                     Status("First mash started.");
@@ -247,6 +303,14 @@ namespace MashAttack
                 case Commands.UPTIME:
                     //Status("Up Received.");
                     CaptureMash(response[1], response[2]);
+                    return true;
+                case Commands.DOWNTIME2:
+                    //Status("Down2 Received.");
+                    downval2 = (long)(response[1] + (response[2] * 256));
+                    return true;
+                case Commands.UPTIME2:
+                    //Status("Up2 Received.");
+                    CaptureMash2(response[1], response[2]);
                     return true;
                 case Commands.FINISHED:
                     Status("Session finished.\n");
@@ -266,40 +330,86 @@ namespace MashAttack
         {
 
             long upval = (long)(v1 + (v2 * 256));
-            mashes.AddMash(downval, upval);
-            //Status(String.Format("Added Mash {0}: {1} {2}", mashes.count - 1, downval, upval));
+            mashes.AddMash(downval/PERIOD, upval/PERIOD);
+            Status(String.Format("Added Mash {0}: {1} {2}", mashes.count - 1, downval, upval));
             timeLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
                                    new Action(delegate ()
                                    {
-                                       timeLabel.Content = mashes.count;
+                                       timeLabel.Content = mashes.count + mashes2.count;
+                                   }));
+        }
+
+        private void CaptureMash2(byte v1, byte v2)
+        {
+
+            long upval = (long)(v1 + (v2 * 256));
+            mashes2.AddMash(downval2 / PERIOD, upval / PERIOD);
+            Status(String.Format("Added Mash2 {0}: {1} {2}", mashes2.count - 1, downval2, upval));
+            timeLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
+                                   new Action(delegate ()
+                                   {
+                                       timeLabel.Content = mashes.count + mashes2.count;
                                    }));
         }
 
         private void SecondElapsed(object sender, EventArgs e)
         {
-            Countdown(countdown--);
+            Countdown(--countdown);
             //Status("Timer updated");
         }
 
         private void PlotResults()
         {
             PlotModel tmp = new PlotModel { Title = "Mash Rate" };
+            
             LineSeries mySeries = new LineSeries { StrokeThickness = 2, Color=OxyColors.PaleVioletRed, MarkerSize = 3, MarkerStroke = OxyColors.ForestGreen, MarkerType = MarkerType.Plus };
             //myModel.Clear();
             int i;
             long test = 0;
+            long timestamp = 0;
+
             for (i = 0; i < mashes.count; i++)
             {
                 test = mashes.GetMash(i);
+                timestamp += test;
                 //Console.WriteLine(test);
-                mySeries.Points.Add(new OxyPlot.DataPoint(i, 1000.0/test));
+                mySeries.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
                 
             }
-
+            //var valueAxis = new LogarithmicAxis{ MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "Frequency (Hz)" };
+            //tmp.Axes.Add(valueAxis);
             tmp.Series.Add(mySeries);
+
+            if (!onebutton)
+            {
+                LineSeries mySeries2 = new LineSeries { StrokeThickness = 2, Color = OxyColors.Aqua, MarkerSize = 3, MarkerStroke = OxyColors.Crimson, MarkerType = MarkerType.Triangle };
+                test = 0;
+                timestamp = 0;
+
+                for (i = 0; i < mashes2.count; i++)
+                {
+                    test = mashes2.GetMash(i);
+                    timestamp += test;
+                    //Console.WriteLine(test);
+                    mySeries2.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
+                    
+                }
+                tmp.Series.Add(mySeries2);
+
+            }
+
+            
             chart.Model = tmp;
-            chart.UpdateLayout();
+            
             chart.Visibility = Visibility.Visible;
+            chart.Model.DefaultYAxis.Title = "Frequency (Hz)";
+            chart.Model.DefaultXAxis.Title = "Time (s)";
+            chart.Model.DefaultYAxis.MajorStep = 2;
+            chart.Model.DefaultYAxis.MinorStep = 1;
+            chart.Model.DefaultYAxis.Minimum = 0;
+            chart.Model.DefaultYAxis.Maximum = 20;
+            
+            chart.UpdateLayout();
             chart.IsEnabled = true;
             
             //myModel.
@@ -404,18 +514,47 @@ namespace MashAttack
         private void UpdateStats()
         {
             statusBar.Fill = Brushes.Red;
-            avgTime.Content = FormatStrings((mashes.totalTime / 1000.0) / mashes.count);
-            avgHz.Content = FormatStrings(mashes.count / (mashes.totalTime/1000.0));
-            avgDown.Content = FormatStrings(mashes.downTotal / mashes.count);
-            avgUp.Content = FormatStrings(mashes.upTotal / mashes.count);
-            maxTime.Content = mashes.fastest;
-            minTime.Content = mashes.slowest;
-            maxRate.Content = FormatStrings(1000.0 / (mashes.fastest));
-            minRate.Content = FormatStrings(1000.0 / mashes.slowest);
-            long mymed = mashes.GetMedian();
+            if (onebutton)
+            {
+                avgTime.Content = FormatStrings((mashes.totalTime / 1000.0) / mashes.count);
+                avgHz.Content = FormatStrings(mashes.count / (mashes.totalTime / 1000.0));
+                avgDown.Content = FormatStrings(mashes.downTotal / mashes.count);
+                avgUp.Content = FormatStrings(mashes.upTotal / mashes.count);
+                avgDown2.Content = "";
+                avgUp2.Content = "";
+                maxTime.Content = mashes.fastest;
+                minTime.Content = mashes.slowest;
+                maxRate.Content = FormatStrings(1000.0 / (mashes.fastest));
+                minRate.Content = FormatStrings(1000.0 / mashes.slowest);
+                long mymed = mashes.GetMedian();
 
-            medRate.Content = FormatStrings(1000.0 / mymed);
-            medTime.Content = mymed;
+                medRate.Content = FormatStrings(1000.0 / mymed);
+                medTime.Content = mymed;
+            }
+            else
+            {
+                int totalmashes = mashes.count + mashes2.count;
+                double totaltime = Math.Max(mashes.totalTime, mashes2.totalTime);
+                long fastest = Math.Min(mashes.fastest, mashes2.fastest);
+                long slowest = Math.Max(mashes.slowest, mashes2.slowest);
+
+                avgTime.Content = FormatStrings((totaltime / 1000.0) / totalmashes);
+                avgHz.Content = FormatStrings(totalmashes / (totaltime / 1000.0));
+                avgDown.Content = FormatStrings(mashes.downTotal / mashes.count);
+                avgUp.Content = FormatStrings(mashes.upTotal / mashes.count);
+                avgDown2.Content = FormatStrings(mashes2.downTotal / mashes2.count);
+                avgUp2.Content = FormatStrings(mashes2.upTotal / mashes2.count);
+                maxTime.Content = fastest;
+                minTime.Content = slowest;
+                maxRate.Content = FormatStrings(1000.0 / fastest);
+                minRate.Content = FormatStrings(1000.0 / slowest);
+                long mymed = mashes.GetMedian();
+
+                medRate.Content = FormatStrings(1000.0 / mymed);
+
+                mymed = mashes2.GetMedian();
+                medTime.Content = FormatStrings(1000.0 / mymed);
+            }
 
             PlotResults();
         }

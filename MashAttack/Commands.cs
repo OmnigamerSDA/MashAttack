@@ -16,6 +16,8 @@ namespace MashAttack
         //uC responses
         public const byte SPINUP = 0x11;
         public const byte INITIATED = 0x22;
+        public const byte DOWNTIME2 = 0x44;
+        public const byte UPTIME2 = 0x55;
         public const byte DOWNTIME = 0x66;
         public const byte UPTIME = 0x77;
         public const byte FINISHED = 0x33;
