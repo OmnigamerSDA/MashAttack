@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MashAttack
 {
-    class Mash
+    public class Mash
     {
         public long down;
         public long up;

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MashAttack
 {
-    class MashSet
+    public class MashSet
     {
         public int count;
         public double totalTime;
