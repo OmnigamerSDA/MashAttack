@@ -75,10 +75,12 @@ namespace MashAttack
             {
                 foreach (var row in values)
                 {
+                    if(row != null)
                     // Print columns A and E, which correspond to indices 0 and 4.
-                    usernames.Add(String.Format("{0}", row[0]));
+                        usernames.Add(String.Format("{0}", row[0]));
                 }
                 usernames.Sort();
+                usernames = usernames.Distinct().ToList();
                 return usernames;
             }
             else

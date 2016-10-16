@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+//using System.Windows.Forms;
 //using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
@@ -51,6 +51,7 @@ namespace MashAttack
         long downval2 = 0;
         bool onebutton = true;
         SheetsAgent sheets;
+        //string comString;
 
         delegate void SetStatusCallback(string text);
 
@@ -105,18 +106,68 @@ namespace MashAttack
 
         void updatePortList()
         {
-            comBox.Items.Clear();
+            comItems.Items.Clear();
+            MenuItem newItem = new MenuItem();
+            newItem.Header = "None";
+            newItem.IsCheckable = true;
+            newItem.IsChecked = true;
+            newItem.Click += new RoutedEventHandler(COMSelect);
+            comItems.Items.Add(newItem);
             foreach (string s in SerialPort.GetPortNames())
             {
-                comBox.Items.Add(s);
+                comItems.Items.Add(new MenuItem());
+                newItem = (MenuItem)comItems.Items.GetItemAt(comItems.Items.Count - 1);
+                newItem.Header = s;
+                newItem.IsCheckable = true;
+                newItem.IsChecked = false;
+                newItem.Click += new RoutedEventHandler(COMSelect);
+                //comItems.Items.Add(newItem);
             }
-            comBox.SelectedIndex = comBox.Items.Count - 1;
+
+            if(serial != null)
+                if (serial.isOpen())
+                    serial.Close();
+        }
+
+        private void COMSelect(object sender, EventArgs e)
+        {
+            MenuItem tempItem;
+
+            for(int i = 0; i < comItems.Items.Count; i++)
+            {
+                tempItem = (MenuItem)comItems.Items.GetItemAt(i);
+                tempItem.IsChecked = false;
+            }
+
+            tempItem = (MenuItem)sender;
+            tempItem.IsChecked = true;
+
+            if(serial!=null)
+                if (serial.isOpen())
+                    serial.Close();
+            if (tempItem.Header.ToString() != "None")
+            {
+                serial = new SerialComms(tempItem.Header.ToString(), BAUD_RATE, PERIOD, Status);
+                //serial.StatusDelegate = Status;
+                serial.BarDelegate = Bar;
+                serial.CountdownDelegate = StartCountdown;
+                serial.UpdateDelegate = StatsInvoke;
+                serial.MashDelegate = MashIncrement;
+            }
+            //comString = tempItem.Header.ToString();
+
+            //statusLine.Content = comString;
         }
 
         private void StartComms()
         {
             //_datPort.DiscardOutBuffer();//Flush the output buffer
             //_datPort.DiscardInBuffer();
+            if(serial == null)
+            {
+                Status("Not connected to COM port!");
+                return;
+            }
 
             serial.Command(START);//Write out control data to Arduino
             Status("Start signal sent.");
@@ -166,6 +217,8 @@ namespace MashAttack
                     countdown = 10;
                     break;
             }
+
+            Countdown(countdown);
         }
 
         public void StartCountdown()
@@ -178,78 +231,6 @@ namespace MashAttack
             Bar(Brushes.Green);
         }
 
-        //private bool Command(byte opcode)
-        //{
-        //    if (_datPort == null || !_datPort.IsOpen) return false;
-        //    byte[] inputs = new byte[1];
-
-        //    inputs[0] = opcode;
-
-        //    _datPort.Write(inputs, 0, 1);//Write out control data to Arduino
-        //    Status(String.Format("Wrote command: {0:x}", opcode));
-        //    return true ;
-        //}
-
-        //void tick(object sender, EventArgs e)
-        //{
-        //    if (_datPort == null || !_datPort.IsOpen) return;
-        //    byte[] readBuffer = new byte[3];
-        //    int readCount = 0;
-
-        //    // Try to read some data from the COM port and append it to our localBuffer.
-        //    // If there's an IOException then the device has been disconnected.
-        //    readCount = _datPort.BytesToRead;
-        //    while (readCount > 2)
-        //    {
-
-        //        try
-        //        {
-        //            //Status(String.Format("{0}", readCount));
-        //            _datPort.Read(readBuffer, 0, 3); //Read in 3 bytes from the com port
-        //            //Status(String.Format("Mash {0}: {1:d} {2:d}", mashes.count, readBuffer[1], readBuffer[2]));
-        //        }
-        //        catch (IOException)
-        //        {
-        //            Status("Something went wrong.");
-        //            return;
-        //        }
-
-        //        ParseResponse(readBuffer);
-
-        //        readCount = _datPort.BytesToRead; //update read count in case multiple comms occurred
-        //    }
-        //}
-
-        //private int TimedRead(int interval)
-        //{
-        //    Timer statusTimer = new Timer();
-        //    statusTimer.Interval = interval;
-        //    statusTimer.Tick += new EventHandler(TimeOutCheck);
-        //    statusTimer.Start();
-        //    timeout = false;
-        //    int readCount = 0;
-        //    do
-        //    {
-        //        readCount = _datPort.BytesToRead;
-        //    } while (readCount <= 0 && !timeout);
-
-        //    statusTimer.Stop();
-
-        //    if (timeout)
-        //    {
-        //        timeout = false;
-        //        Status("Comms timeout!");
-        //        return -1;
-        //    }
-        //    else
-        //        return readCount;
-        //}
-
-        //private void TimeOutCheck(object sender, EventArgs e)
-        //{
-        //    timeout = true;
-        //}
-
         public void Status(string v)
         {
             statusBox.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
@@ -258,6 +239,7 @@ namespace MashAttack
                                        statusBox.AppendText(String.Format(v + "\n"));
                                        statusBox.CaretIndex = statusBox.Text.Length;
                                        statusBox.ScrollToEnd();
+                                       statusLine.Content = v;
                                    }));
 
         }
@@ -280,91 +262,19 @@ namespace MashAttack
                                    }));
         }
 
-        //private bool ParseResponse(byte[] response)
-        //{
-        //    switch (response[0])
-        //    {
-        //        case Commands.SPINUP:
-        //            Status("Device Ready.\n");
-        //            Status(String.Format("Seconds: {0}    Config: {1:x}", response[1], response[2]));
-        //            //countdown = 9;
-        //            Bar(Brushes.Yellow);
-        //            mashes = new MashSet();
-        //            mashes2 = new MashSet();
-        //            //isDown = true;
-        //            return true;
-        //        case Commands.INITIATED:
-        //            Status("First mash started.");
-        //            StartCountdown();
-        //            return true;
-        //        case Commands.DOWNTIME:
-        //            //Status("Down Received.");
-        //            downval = (long)(response[1] + (response[2] * 256));
-        //            return true;
-        //        case Commands.UPTIME:
-        //            //Status("Up Received.");
-        //            CaptureMash(response[1], response[2]);
-        //            return true;
-        //        case Commands.DOWNTIME2:
-        //            //Status("Down2 Received.");
-        //            downval2 = (long)(response[1] + (response[2] * 256));
-        //            return true;
-        //        case Commands.UPTIME2:
-        //            //Status("Up2 Received.");
-        //            CaptureMash2(response[1], response[2]);
-        //            return true;
-        //        case Commands.FINISHED:
-        //            Status("Session finished.\n");
-        //            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
-        //                           new Action(delegate ()
-        //                           {
-        //                               UpdateStats();
-        //                           }));
-        //            return true;
-        //        default:
-        //            Status("Device Comms Error. \n");
-        //            return false;
-        //    }
-        //}
-
-        //private void CaptureMash(byte v1, byte v2)
-        //{
-
-        //    long upval = (long)(v1 + (v2 * 256));
-        //    mashes.AddMash(downval/PERIOD, upval/PERIOD);
-        //    Status(String.Format("Added Mash {0}: {1} {2}", mashes.count - 1, downval, upval));
-        //    timeLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
-        //                           new Action(delegate ()
-        //                           {
-        //                               timeLabel.Content = mashes.count + mashes2.count;
-        //                           }));
-        //}
-
-        //private void CaptureMash2(byte v1, byte v2)
-        //{
-
-        //    long upval = (long)(v1 + (v2 * 256));
-        //    mashes2.AddMash(downval2 / PERIOD, upval / PERIOD);
-        //    Status(String.Format("Added Mash2 {0}: {1} {2}", mashes2.count - 1, downval2, upval));
-        //    timeLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
-        //                           new Action(delegate ()
-        //                           {
-        //                               timeLabel.Content = mashes.count + mashes2.count;
-        //                           }));
-        //}
-
         private void SecondElapsed(object sender, EventArgs e)
         {
             Countdown(--countdown);
             //Status("Timer updated");
         }
 
-        private void PlotResults()
+        private void PlotResults(long median, long median2)
         {
             PlotModel tmp = new PlotModel { Title = "Mash Rate" };
             
             LineSeries mySeries = new LineSeries { StrokeThickness = 2, Color=OxyColors.PaleVioletRed, MarkerSize = 3, MarkerStroke = OxyColors.ForestGreen, MarkerType = MarkerType.Plus };
             //myModel.Clear();
+            LineSeries medLine = new LineSeries { StrokeThickness = 1, Color = OxyColors.DarkRed, LineStyle = LineStyle.Dash, MarkerType = MarkerType.None };
             int i;
             long test = 0;
             long timestamp = 0;
@@ -377,13 +287,17 @@ namespace MashAttack
                 mySeries.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
                 
             }
+            medLine.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(1000.0 / median, 2)));
+            medLine.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp / 1000.00), Math.Round(1000.0 / median, 2)));
             //var valueAxis = new LogarithmicAxis{ MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "Frequency (Hz)" };
             //tmp.Axes.Add(valueAxis);
             tmp.Series.Add(mySeries);
+            tmp.Series.Add(medLine);
 
             if (!onebutton)
             {
                 LineSeries mySeries2 = new LineSeries { StrokeThickness = 2, Color = OxyColors.Aqua, MarkerSize = 3, MarkerStroke = OxyColors.Crimson, MarkerType = MarkerType.Triangle };
+                LineSeries medLine2 = new LineSeries { StrokeThickness = 1, Color = OxyColors.DarkBlue, LineStyle = LineStyle.Dash, MarkerType = MarkerType.None };
                 test = 0;
                 timestamp = 0;
 
@@ -395,6 +309,9 @@ namespace MashAttack
                     mySeries2.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
                     
                 }
+                medLine2.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(1000.0 / median2, 2)));
+                medLine2.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp/1000.00), Math.Round(1000.0 / median2, 2)));
+                tmp.Series.Add(medLine2);
                 tmp.Series.Add(mySeries2);
 
             }
@@ -423,21 +340,13 @@ namespace MashAttack
             //mystop.Start();
             //myTimer.Start();
             mashes = new MashSet();
-            
-            if (kb_mode)
-            {
-                mashEnabled = true;
+            chart.Visibility = Visibility.Hidden;
+            timerLabel.Visibility = Visibility.Visible;
+            mashLabel.Visibility = Visibility.Visible;
+            mashLabel.Content = "Mashes: 0";
+            scoreLabel.Visibility = Visibility.Hidden;
+            StartComms();
 
-                startButton.IsEnabled = false;
-                isDown = false;
-                isUp = true;
-                countdown = 9;
-                statusBar.Fill = Brushes.Yellow;
-            }
-            else
-            {
-                StartComms();
-            }
         }
 
         private void TimeOver(object sender, EventArgs e)
@@ -445,78 +354,16 @@ namespace MashAttack
             myTimer.Stop();
             updateTimer.Stop();
             timerLabel.Content = 0;
-
-            if (kb_mode)
-            {
-                mystop.Stop();
-                timeLabel.Content = mystop.ElapsedMilliseconds;
-                mystop.Reset();
-                mashEnabled = false;
-                first = true;
-                isUp = true;
-                isDown = false;
-                startButton.IsEnabled = true;
-                //UpdateStats();
-            }
-            else
-            {
-                //LoadMashes();
-
-            }
-
-            
+            timerLabel.Visibility = Visibility.Hidden; 
         }
-
-        //private void LoadMashes()
-        //{
-        //    byte[] response = new byte[1];
-        //    byte[] mashnum = new byte[2];
-        //    int total_mashes = 0;
-
-        //    if(TimedRead(2000)>0)
-        //    {
-        //        _datPort.Read(response, 0, 1); //Read in bytes from the com port
-
-        //        if (ParseResponse(response))
-        //        {
-        //            _datPort.Read(mashnum, 0, 2); //Read in bytes from the com port
-
-        //            total_mashes = mashnum[0] + mashnum[1] * 256;
-
-        //            byte[] downvals = new byte[total_mashes * 2];
-        //            byte[] upvals = new byte[total_mashes * 2];
-
-        //            _datPort.Read(downvals, 0, total_mashes * 2);
-        //            _datPort.Read(upvals, 0, total_mashes * 2);
-
-        //            long[] downs = Convert_Shorts(downvals, total_mashes);
-        //            long[] ups = Convert_Shorts(upvals, total_mashes);
-
-        //            for(int i = 0; i < total_mashes; i++)
-        //            {
-        //                mashes.AddMash(downs[i], ups[i]);
-        //            }
-        //        }
-
-        //    }
-        //}
-
-        //private long[] Convert_Shorts(byte[] bytevals, int total_mashes)
-        //{
-        //    long[] results = new long[total_mashes];
-        //    for(int i = 0; i < total_mashes; i++)
-        //    {
-        //        results[i] = bytevals[i*2] + bytevals[i * 2 + 1] * 256;
-        //    }
-
-        //    return results;
-        //}
 
         public void UpdateStats(MashSet newmashes, MashSet newmashes2)
         {
 
             mashes = newmashes;
             mashes2 = newmashes2;
+            long mymed = 0;
+            long mymed2 = 0;
 
             statusBar.Fill = Brushes.Red;
             if (onebutton)
@@ -531,7 +378,7 @@ namespace MashAttack
                 minTime.Content = mashes.slowest;
                 maxRate.Content = FormatStrings(1000.0 / (mashes.fastest));
                 minRate.Content = FormatStrings(1000.0 / mashes.slowest);
-                long mymed = mashes.GetMedian();
+                mymed = mashes.GetMedian();
 
                 medRate.Content = FormatStrings(1000.0 / mymed);
                 medTime.Content = mymed;
@@ -555,17 +402,17 @@ namespace MashAttack
                 minTime.Content = slowest;
                 maxRate.Content = FormatStrings(1000.0 / fastest);
                 minRate.Content = FormatStrings(1000.0 / slowest);
-                long mymed = mashes.GetMedian();
+                mymed = mashes.GetMedian();
 
                 medRate.Content = FormatStrings(1000.0 / mymed);
 
-                mymed = mashes2.GetMedian();
-                medTime.Content = FormatStrings(1000.0 / mymed);
+                mymed2 = mashes2.GetMedian();
+                medTime.Content = FormatStrings(1000.0 / mymed2);
             }
 
             CalculateScore();
 
-            PlotResults();
+            PlotResults(mymed,mymed2);
         }
 
         private void CalculateScore()
@@ -595,7 +442,8 @@ namespace MashAttack
                 }
             }
 
-            scoreLabel.Content = score;
+            scoreLabel.Content = String.Format("Score: {0}",score);
+            scoreLabel.Visibility = Visibility.Visible;
         }
 
         private string FormatStrings(double num)
@@ -612,89 +460,25 @@ namespace MashAttack
                                    }));
         }
 
-        private void Grid_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (mashEnabled && !isDown && kb_mode)
-            {
-                if (e.Key == Key.NumPad8)
-                {
-                    if (!first)
-                    {
-                        current = mystop.ElapsedMilliseconds;
-
-                        mashes.AddMash(prior, release, current);
-
-                        prior = current;
-                        isDown = true;
-                        isUp = false;
-                    }
-                    else
-                    {
-                        mystop.Start();
-                        myTimer.Start();
-                        prior = mystop.ElapsedMilliseconds;
-                        updateTimer.Start();
-                        timerLabel.Content = 10;
-                        statusBar.Fill = Brushes.Green;
-                        first = false;
-                        isDown = true;
-                        isUp = false;
-                    }
-
-                }
-            }
-        }
-
-        private void Grid_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (mashEnabled && !isUp && kb_mode)
-            {
-                if (e.Key == Key.NumPad8)
-                {
-                    release = mystop.ElapsedMilliseconds;
-                    isUp = true;
-                    isDown = false;
-                }
-            }
-        }
-
-        //private void updateButton_Click(object sender, RoutedEventArgs e)
-        //{
-        //    UpdateStats();
-        //}
-
-        private void plotButton_Click(object sender, RoutedEventArgs e)
-        {
-            PlotResults();
-        }
-
         public void MashIncrement(int val)
         {
-            timeLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
+            mashLabel.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
                                    new Action(delegate ()
                                    {
-                                       timeLabel.Content = val;
+                                       mashLabel.Content = String.Format("Mashes: {0}",val);
                                    }));
         }
 
-        private void connectButton_Click(object sender, RoutedEventArgs e)
+        private void comUpdate_Click(object sender, RoutedEventArgs e)
         {
-
-            serial = new SerialComms(comBox.Text, BAUD_RATE, PERIOD, Status);
-            //serial.StatusDelegate = Status;
-            serial.BarDelegate = Bar;
-            serial.CountdownDelegate = StartCountdown;
-            serial.UpdateDelegate = StatsInvoke;
-            serial.MashDelegate = MashIncrement;
-
+            updatePortList();
         }
 
-        private void refreshButton_Click(object sender, RoutedEventArgs e)
+        private void playerUpdate_Click(object sender, RoutedEventArgs e)
         {
-            
             usersBox.Items.Clear();
             List<string> users = sheets.GetUsernames();
-            for(int i=0;i<users.Count;i++)
+            for (int i = 0; i < users.Count; i++)
             {
                 usersBox.Items.Add(users[i]);
             }

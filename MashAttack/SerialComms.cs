@@ -74,6 +74,19 @@ namespace MashAttack
             return;
         }
 
+        public void Close()
+        {
+            _datPort.Close();
+        }
+
+        public bool isOpen()
+        {
+            if (_datPort != null)
+                return _datPort.IsOpen;
+            else
+                return false;
+        }
+
         void DataReceived(object sender, EventArgs e)
         {
             if (_datPort == null || !_datPort.IsOpen) return;
