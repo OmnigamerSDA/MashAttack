@@ -33,6 +33,7 @@ namespace MashAttack
             score = newscore;
             median = newmedian;
             rate = newrate;
+            max = rate;
         }
 
         //public void UpdateAll(bool onebutton, string player, string mode, string input)

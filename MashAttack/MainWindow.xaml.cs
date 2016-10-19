@@ -54,6 +54,10 @@ namespace MashAttack
         Label[,] statLabels = new Label[4, 6];
         bool relative = false;
 
+        string player = "";
+        string mode = "";
+        string input = "";
+
         readonly SolidColorBrush BETTER = Brushes.Blue;
         readonly SolidColorBrush WORSE = Brushes.Red;
         readonly SolidColorBrush ZERO = Brushes.Black;
@@ -102,21 +106,21 @@ namespace MashAttack
             updatePortList();
             //myModel = new PlotModel { Title = "Mashing Rate" };
 
-            configBox.Items.Insert(0, "10s1B");
-            configBox.Items.Insert(1, "5s1B");
-            configBox.Items.Insert(2, "30s1B");
+            //configBox.Items.Insert(0, "10s1B");
+            //configBox.Items.Insert(1, "5s1B");
+            //configBox.Items.Insert(2, "30s1B");
 
-            configBox.Items.Insert(3, "10s2B");
-            configBox.Items.Insert(4, "5s2B");
-            configBox.Items.Insert(5, "30s2B");
+            //configBox.Items.Insert(3, "10s2B");
+            //configBox.Items.Insert(4, "5s2B");
+            //configBox.Items.Insert(5, "30s2B");
 
-            inputBox.Items.Insert(0, "SNES");
-            inputBox.Items.Insert(1, "NES");
-            inputBox.Items.Insert(2, "GEN");
-            inputBox.Items.Insert(3, "ARC");
+            //inputBox.Items.Insert(0, "SNES");
+            //inputBox.Items.Insert(1, "NES");
+            //inputBox.Items.Insert(2, "GEN");
+            //inputBox.Items.Insert(3, "ARC");
 
-            configBox.SelectedIndex = 0;
-            inputBox.SelectedIndex = 0;
+            //configBox.SelectedIndex = 0;
+            //inputBox.SelectedIndex = 0;
 
             int i = 0;
             int j = 0;
@@ -224,48 +228,48 @@ namespace MashAttack
             serial.Command(START);//Write out control data to Arduino
             Status("Start signal sent.");
 
-            switch (configBox.SelectedIndex)
+            switch (mode)
             {
-                case 0:
+                case "Standard 1B":
                     serial.Command(10);
                     serial.Command(0x41);
-                    onebutton = true;
+                    //onebutton = true;
                     countdown = 10;
                     break;
-                case 1:
+                case "Sprint 1B":
                     serial.Command(5);
                     serial.Command(0x41);
-                    onebutton = true;
+                    //onebutton = true;
                     countdown = 5;
                     break;
-                case 2:
+                case "Marathon 1B":
                     serial.Command(30);
                     serial.Command(0x41);
-                    onebutton = true;
+                    //onebutton = true;
                     countdown = 30;
                     break;
-                case 3:
+                case "Standard 2B":
                     serial.Command(10);
                     serial.Command(0xC3);
-                    onebutton = false;
+                    //onebutton = false;
                     countdown = 10;
                     break;
-                case 4:
+                case "Sprint 2B":
                     serial.Command(5);
                     serial.Command(0xC3);
-                    onebutton = false;
+                    //onebutton = false;
                     countdown = 5;
                     break;
-                case 5:
+                case "Marathon 2B":
                     serial.Command(30);
                     serial.Command(0xC3);
-                    onebutton = false;
+                    //onebutton = false;
                     countdown = 30;
                     break;
                 default:
                     serial.Command(10);
                     serial.Command(0x81);
-                    onebutton = true;
+                    //onebutton = true;
                     countdown = 10;
                     break;
             }
@@ -285,12 +289,12 @@ namespace MashAttack
 
         public void Status(string v)
         {
-            statusBox.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
+            statusLine.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
                                    new Action(delegate ()
                                    {
-                                       statusBox.AppendText(String.Format(v + "\n"));
-                                       statusBox.CaretIndex = statusBox.Text.Length;
-                                       statusBox.ScrollToEnd();
+                                       //statusBox.AppendText(String.Format(v + "\n"));
+                                       //statusBox.CaretIndex = statusBox.Text.Length;
+                                       //statusBox.ScrollToEnd();
                                        statusLine.Content = v;
                                    }));
 
@@ -418,6 +422,7 @@ namespace MashAttack
             mashLabel.Visibility = Visibility.Visible;
             mashLabel.Content = "Mashes: 0";
             //scoreLabel.Visibility = Visibility.Hidden;
+            winnerLabel.Content = " ";
             ClearStats();
             StartComms();
 
@@ -446,7 +451,7 @@ namespace MashAttack
             {
                 mymed = mashes.GetMedian();
 
-                newStats = new Stats(mashes.count/(mashes.totalTime/1000.0), mashes.upTotal/mashes.count, mashes.downTotal/mashes.count, score,1000.00/mymed);
+                newStats = new Stats(Math.Round(mashes.count/(mashes.totalTime/1000.0),3), mashes.upTotal/mashes.count, mashes.downTotal/mashes.count, score,Math.Round(1000.00/mymed,3));
 
             }
             else
@@ -460,12 +465,14 @@ namespace MashAttack
 
                 mymed2 = mashes2.GetMedian();
 
-                newStats = new Stats(totalmashes / (totaltime / 1000.0), totalup / totalmashes, totaldown / totalmashes, score, 1000.00/((mymed+mymed2)/4));
+                newStats = new Stats(Math.Round(totalmashes / (totaltime / 1000.0),3), totalup / totalmashes, totaldown / totalmashes, score, Math.Round(1000.00/((mymed+mymed2)/4),3));
             }
 
-            sheets.SaveSession(newStats, usersBox.SelectedValue.ToString(), inputBox.SelectedValue.ToString(), configBox.SelectedValue.ToString());
+            sheets.SaveSession(newStats, usersBox.SelectedValue.ToString(), input, mode);
             playerStats = sheets.GetPlayer();
             globalStats = sheets.GetGlobal();
+
+            CheckWinner();
 
             if (relative)
             {
@@ -478,6 +485,21 @@ namespace MashAttack
 
             timerLabel.Visibility = Visibility.Hidden;
             PlotResults(mymed,mymed2);
+        }
+
+        private void CheckWinner()
+        {
+            Status(newStats.max + "      " + playerStats.max + "      " + globalStats.max);
+            if(Math.Round(globalStats.max,3) == Math.Round(newStats.max,3))
+            {
+                winnerLabel.Content = "New Record!";
+                winnerLabel.Foreground = Brushes.Gold;
+            }
+            else if(Math.Round(playerStats.max,3) == Math.Round(newStats.max,3))
+            {
+                winnerLabel.Content = "New Personal Best!";
+                winnerLabel.Foreground = Brushes.Green;
+            }
         }
 
         private void UpdateStatsRelative()
@@ -729,5 +751,27 @@ namespace MashAttack
                     
         }
 
+        private void duration_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton temp= (RadioButton)sender;
+            mode = temp.Content.ToString() + (onebutton ? " 1B" : " 2B");
+
+        }
+
+        private void input_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton temp = (RadioButton)sender;
+            input = temp.Content.ToString();
+        }
+
+        private void button1_Checked(object sender, RoutedEventArgs e)
+        {
+            onebutton = true;
+        }
+
+        private void button2_Checked(object sender, RoutedEventArgs e)
+        {
+            onebutton = false;
+        }
     }
 }
