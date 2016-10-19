@@ -17,14 +17,14 @@ namespace MashAttack
 {
     class SheetsAgent
     {
-        static string[] Scopes = { SheetsService.Scope.SpreadsheetsReadonly };
+        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
         static string ApplicationName = "MashAttack";
         String spreadsheetId = "1Lc5orsabiVfZHTei6SYLO9t7ORviHUjPkydaDNz1uLs";
         SheetsService service;
 
         public SheetsAgent()
         {
-            Startup().Wait() ;
+            Startup().Wait();
 
             // Create Google Sheets API service.
             //service = new SheetsService(new BaseClientService.Initializer()
@@ -44,7 +44,7 @@ namespace MashAttack
                 Console.WriteLine("Setting credpath");
                 string credPath = System.Environment.GetFolderPath(
                     System.Environment.SpecialFolder.Personal);
-                credPath = Path.Combine(credPath, ".credentials\\mashattack_creds.json");
+                credPath = Path.Combine(credPath, ".credentials\\mashattack_creds2.json");
 
                 Console.WriteLine("Authorizing");
                 UserCredential credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -75,8 +75,8 @@ namespace MashAttack
             {
                 foreach (var row in values)
                 {
-                    if(row != null)
-                    // Print columns A and E, which correspond to indices 0 and 4.
+                    if (row != null)
+                        // Print columns A and E, which correspond to indices 0 and 4.
                         usernames.Add(String.Format("{0}", row[0]));
                 }
                 usernames.Sort();
@@ -117,5 +117,157 @@ namespace MashAttack
         //    }
         //    Console.Read();
         //}
+
+        public void SaveSession(Stats mystats, string player, string input, string mode)
+        {
+            int index = GetTotal() + 2 ;
+            String range = "Log!A"+index+":I";
+            ValueRange myvalues = new ValueRange();
+            myvalues.MajorDimension = "ROWS";
+            //myvalues.Range = range;
+            var oblist = new List<object>() { System.DateTime.Now, player, input, mode, mystats.rate,mystats.median,mystats.up,mystats.down,mystats.score };
+            myvalues.Values = new List<IList<object>> { oblist };
+            SpreadsheetsResource.ValuesResource.UpdateRequest request = service.Spreadsheets.Values.Update(myvalues,spreadsheetId, range);
+
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            request.Execute();
+
+            SetTotal(index - 1);
+
+
+            range = "Search!C17:E";
+            myvalues = new ValueRange();
+            myvalues.MajorDimension = "ROWS";
+            //myvalues.Range = range;
+            oblist = new List<object>() { "\""+player+"\"", "\""+input+ "\"", "\""+mode+ "\"" };
+            myvalues.Values = new List<IList<object>> { oblist };
+            request = service.Spreadsheets.Values.Update(myvalues, spreadsheetId, range);
+
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            request.Execute();
+        }
+
+        private int GetTotal()
+        {
+            String range = "Search!B3";
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+
+            ValueRange response = request.Execute();
+            IList<IList<Object>> values = response.Values;
+            int myval = 0;
+            if (values != null && values.Count > 0)
+            {
+                foreach (var row in values)
+                {
+                    if (row != null)
+                        // Print columns A and E, which correspond to indices 0 and 4.
+                        myval = Convert.ToInt32(row[0]);
+                }
+            }
+            else
+            {
+                Console.WriteLine("No data found.");
+            }
+
+            return myval;
+        }
+
+        private void SetTotal(int index)
+        {
+            String range = "Search!B3";
+            ValueRange myvalues = new ValueRange();
+            myvalues.MajorDimension = "COLUMNS";
+            myvalues.Range = range;
+            var oblist = new List<object>() { index };
+            myvalues.Values = new List<IList<object>> { oblist };
+            SpreadsheetsResource.ValuesResource.UpdateRequest request = service.Spreadsheets.Values.Update(myvalues, spreadsheetId, range);
+
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.USERENTERED;
+            request.Execute();
+        }
+
+        public Stats GetGlobal()
+        {
+            String range = "Search!C20:I20";
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+            Stats mystats = new Stats();
+
+            double[] vals = new double[7];
+            ValueRange response = request.Execute();
+            IList<IList<Object>> values = response.Values;
+            int i = 0;
+            if (values != null && values.Count > 0)
+            {
+                foreach (var row in values)
+                {
+                    if (row != null)
+                    {
+                        // Print columns A and E, which correspond to indices 0 and 4.
+                        vals[i++] = Convert.ToDouble(row[0]);
+                        vals[i++] = Convert.ToDouble(row[1]);
+                        vals[i++] = Convert.ToDouble(row[2]);
+                        vals[i++] = Convert.ToDouble(row[3]);
+                        vals[i++] = Convert.ToDouble(row[4]);
+                        vals[i++] = Convert.ToDouble(row[5]);
+                        vals[i++] = Convert.ToDouble(row[6]);
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No data found.");
+            }
+
+            mystats.rate = vals[0];
+            mystats.max = vals[1];
+            mystats.median = vals[2];
+            mystats.up = vals[4];
+            mystats.down = vals[5];
+            mystats.score = vals[6];
+
+            return mystats;
+        }
+
+        public Stats GetPlayer()
+        {
+            String range = "Search!C24:I24";
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+            Stats mystats = new Stats();
+
+            double[] vals = new double[7];
+            ValueRange response = request.Execute();
+            IList<IList<Object>> values = response.Values;
+            int i = 0;
+            if (values != null && values.Count > 0)
+            {
+                foreach (var row in values)
+                {
+                    if (row != null)
+                    {
+                        // Print columns A and E, which correspond to indices 0 and 4.
+                        vals[i++] = Convert.ToDouble(row[0]);
+                        vals[i++] = Convert.ToDouble(row[1]);
+                        vals[i++] = Convert.ToDouble(row[2]);
+                        vals[i++] = Convert.ToDouble(row[3]);
+                        vals[i++] = Convert.ToDouble(row[4]);
+                        vals[i++] = Convert.ToDouble(row[5]);
+                        vals[i++] = Convert.ToDouble(row[6]);
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("No data found.");
+            }
+
+            mystats.rate = vals[0];
+            mystats.max = vals[1];
+            mystats.median = vals[2];
+            mystats.up = vals[4];
+            mystats.down = vals[5];
+            mystats.score = vals[6];
+
+            return mystats;
+        }
     }
 }

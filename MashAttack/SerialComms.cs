@@ -25,6 +25,12 @@ namespace MashAttack
         public const byte UPTIME = 0x77;
         public const byte FINISHED = 0x33;
 
+        public const int STATUS = 10;
+        public const int ACTIVE = 20;
+        public const int STARTED = 30;
+        public const int COMPLETE = 40;
+        public const int MASH = 50;
+
         SerialPort _datPort;
         int playerNum = 0;
         MainWindow main;
@@ -36,18 +42,19 @@ namespace MashAttack
 
         int period = 1;
 
-        public Action<String> StatusDelegate;
+        public Action<int,String> StatusDelegate;
         public Action<MashSet, MashSet> UpdateDelegate;
-        public Action<Brush> BarDelegate;
-        public Action CountdownDelegate;
-        public Action<int> MashDelegate;
+        //public Action<Brush> BarDelegate;
+        //public Action CountdownDelegate;
+        //public Action<int> MashDelegate;
 
-        public SerialComms(string port, int rate, int newperiod, Action<String> mydelegate)
+        public SerialComms(string port, int rate, int newperiod, Action<int,String> mydelegate, Action<MashSet,MashSet> myUpdate)
         {
             _datPort = new SerialPort(port,rate);
 
             period = newperiod;
             StatusDelegate = mydelegate;
+            UpdateDelegate = myUpdate;
             //main = parent;
 
             mashes = new MashSet();
@@ -58,7 +65,7 @@ namespace MashAttack
 
             if (_datPort == null || !_datPort.IsOpen)
             {
-                StatusDelegate("Something went wrong.");
+                StatusDelegate(STATUS, "Something went wrong.");
                 return;
             }
 
@@ -69,7 +76,7 @@ namespace MashAttack
             _datPort.ReceivedBytesThreshold = 3;
             _datPort.DataReceived += new SerialDataReceivedEventHandler(DataReceived);
 
-            StatusDelegate(String.Format("Connected to {0}",port));
+            StatusDelegate(STATUS,String.Format("Connected to {0}",port));
 
             return;
         }
@@ -107,7 +114,7 @@ namespace MashAttack
                 }
                 catch (IOException)
                 {
-                    StatusDelegate("Something went wrong.");
+                    StatusDelegate(STATUS,"Something went wrong.");
                     return;
                 }
 
@@ -125,7 +132,7 @@ namespace MashAttack
             inputs[0] = opcode;
 
             _datPort.Write(inputs, 0, 1);//Write out control data to Arduino
-            StatusDelegate(String.Format("Wrote command: {0:x}", opcode));
+            StatusDelegate(STATUS,String.Format("Wrote command: {0:x}", opcode));
             return true;
         }
 
@@ -134,17 +141,17 @@ namespace MashAttack
             switch (response[0])
             {
                 case SPINUP:
-                    StatusDelegate("Device Ready.\n");
-                    StatusDelegate(String.Format("Seconds: {0}    Config: {1:x}", response[1], response[2]));
+                    StatusDelegate(ACTIVE,"Device Ready.\n");
+                    //StatusDelegate(String.Format("Seconds: {0}    Config: {1:x}", response[1], response[2]));
                     //countdown = 9;
-                    BarDelegate(Brushes.Yellow);
+                    //BarDelegate(Brushes.Yellow);
                     mashes = new MashSet();
                     mashes2 = new MashSet();
                     //isDown = true;
                     return true;
                 case INITIATED:
-                    StatusDelegate("First mash started.");
-                    CountdownDelegate();
+                    StatusDelegate(STARTED,"First mash started.");
+                    //CountdownDelegate();
                     return true;
                 case DOWNTIME:
                     //Status("Down Received.");
@@ -163,7 +170,7 @@ namespace MashAttack
                     CaptureMash2(response[1], response[2]);
                     return true;
                 case FINISHED:
-                    StatusDelegate("Session finished.\n");
+                    StatusDelegate(COMPLETE,"Session finished.\n");
                     UpdateDelegate(mashes, mashes2);
                     //main.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
                     //               new Action(delegate ()
@@ -172,7 +179,7 @@ namespace MashAttack
                     //               }));
                     return true;
                 default:
-                    StatusDelegate("Device Comms Error. \n");
+                    StatusDelegate(STATUS,"Device Comms Error. \n");
                     return false;
             }
         }
@@ -182,8 +189,9 @@ namespace MashAttack
 
             long upval = (long)(v1 + (v2 * 256));
             mashes.AddMash(downval / period, upval / period);
-            StatusDelegate(String.Format("Added Mash {0}: {1} {2}", mashes.count - 1, downval, upval));
-            MashDelegate(mashes.count + mashes2.count);
+            //StatusDelegate(MASH,String.Format("Added Mash {0}: {1} {2}", mashes.count - 1, downval, upval));
+            StatusDelegate(MASH, (mashes.count + mashes2.count) + "");
+            //MashDelegate(mashes.count + mashes2.count);
         }
 
         private void CaptureMash2(byte v1, byte v2)
@@ -191,8 +199,9 @@ namespace MashAttack
 
             long upval = (long)(v1 + (v2 * 256));
             mashes2.AddMash(downval2 / period, upval / period);
-            StatusDelegate(String.Format("Added Mash2 {0}: {1} {2}", mashes2.count - 1, downval2, upval));
-            MashDelegate(mashes.count + mashes2.count);
+            //StatusDelegate(MASH,String.Format("Added Mash2 {0}: {1} {2}", mashes2.count - 1, downval2, upval));
+            StatusDelegate(MASH, (mashes.count + mashes2.count) + "");
+            //MashDelegate(mashes.count + mashes2.count);
         }
     }
 }

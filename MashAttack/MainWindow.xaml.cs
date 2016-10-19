@@ -52,6 +52,15 @@ namespace MashAttack
         bool onebutton = true;
         SheetsAgent sheets;
         Label[,] statLabels = new Label[4, 6];
+        bool relative = false;
+
+        readonly SolidColorBrush BETTER = Brushes.Blue;
+        readonly SolidColorBrush WORSE = Brushes.Red;
+        readonly SolidColorBrush ZERO = Brushes.Black;
+
+        Stats newStats = new Stats();
+        Stats globalStats = new Stats();
+        Stats playerStats = new Stats();
         //string comString;
 
         delegate void SetStatusCallback(string text);
@@ -190,12 +199,12 @@ namespace MashAttack
                     serial.Close();
             if (tempItem.Header.ToString() != "None")
             {
-                serial = new SerialComms(tempItem.Header.ToString(), BAUD_RATE, PERIOD, Status);
+                serial = new SerialComms(tempItem.Header.ToString(), BAUD_RATE, PERIOD, ParseMessage, StatsInvoke);
                 //serial.StatusDelegate = Status;
-                serial.BarDelegate = Bar;
-                serial.CountdownDelegate = StartCountdown;
-                serial.UpdateDelegate = StatsInvoke;
-                serial.MashDelegate = MashIncrement;
+                //serial.BarDelegate = Bar;
+                //serial.CountdownDelegate = StartCountdown;
+                //serial.UpdateDelegate = StatsInvoke;
+                //serial.MashDelegate = MashIncrement;
             }
             //comString = tempItem.Header.ToString();
 
@@ -330,17 +339,16 @@ namespace MashAttack
                 mySeries.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
                 
             }
-            medLine.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(1000.0 / median, 2)));
-            medLine.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp / 1000.00), Math.Round(1000.0 / median, 2)));
+            
             //var valueAxis = new LogarithmicAxis{ MajorGridlineStyle = LineStyle.Solid, MinorGridlineStyle = LineStyle.Dot, Title = "Frequency (Hz)" };
             //tmp.Axes.Add(valueAxis);
             tmp.Series.Add(mySeries);
-            tmp.Series.Add(medLine);
+            
 
             if (!onebutton)
             {
                 LineSeries mySeries2 = new LineSeries { StrokeThickness = 2, Color = OxyColors.Aqua, MarkerSize = 3, MarkerStroke = OxyColors.Crimson, MarkerType = MarkerType.Triangle };
-                LineSeries medLine2 = new LineSeries { StrokeThickness = 1, Color = OxyColors.DarkBlue, LineStyle = LineStyle.Dash, MarkerType = MarkerType.None };
+                
                 test = 0;
                 timestamp = 0;
 
@@ -352,14 +360,35 @@ namespace MashAttack
                     mySeries2.Points.Add(new OxyPlot.DataPoint(Math.Round(timestamp/1000.0,3), Math.Round(1000.0 / test, 2)));
                     
                 }
-                medLine2.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(1000.0 / median2, 2)));
-                medLine2.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp/1000.00), Math.Round(1000.0 / median2, 2)));
-                tmp.Series.Add(medLine2);
+
+                
+                
                 tmp.Series.Add(mySeries2);
 
             }
 
+            if (onebutton)
+            {
+                medLine.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(1000.0 / median, 2)));
+                medLine.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp / 1000.00), Math.Round(1000.0 / median, 2)));
+                tmp.Series.Add(medLine);
+            }
+            else
+            {
+                LineSeries medLine2 = new LineSeries { StrokeThickness = 1, Color = OxyColors.DarkBlue, LineStyle = LineStyle.Dash, MarkerType = MarkerType.None };
+                double avg_median = 1000.00 / ((median + median2) / 2);
+                double effective_median = 1000.00 / ((median + median2) / 4);
+
+                medLine2.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(effective_median, 2)));
+                medLine2.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp / 1000.00), Math.Round(effective_median, 2)));
+                medLine.Points.Add(new OxyPlot.DataPoint(0.00, Math.Round(avg_median, 2)));
+                medLine.Points.Add(new OxyPlot.DataPoint(Math.Ceiling(timestamp / 1000.00), Math.Round(avg_median, 2)));
+                tmp.Series.Add(medLine2);
+                tmp.Series.Add(medLine);
+            }
+
             
+
             chart.Model = tmp;
             
             chart.Visibility = Visibility.Visible;
@@ -369,6 +398,7 @@ namespace MashAttack
             chart.Model.DefaultYAxis.MinorStep = 1;
             chart.Model.DefaultYAxis.Minimum = 0;
             chart.Model.DefaultYAxis.Maximum = 20;
+            chart.Model.ResetAllAxes();
             
             chart.UpdateLayout();
             chart.IsEnabled = true;
@@ -398,7 +428,7 @@ namespace MashAttack
             myTimer.Stop();
             updateTimer.Stop();
             timerLabel.Content = 0;
-            timerLabel.Visibility = Visibility.Hidden; 
+            //timerLabel.Visibility = Visibility.Hidden; 
         }
 
         public void UpdateStats(MashSet newmashes, MashSet newmashes2)
@@ -406,18 +436,17 @@ namespace MashAttack
 
             mashes = newmashes;
             mashes2 = newmashes2;
-            Stats newstats;
             long mymed = 0;
             long mymed2 = 0;
 
-            long score = (long)CalculateScore();
+            double score = CalculateScore();
 
             statusBar.Fill = Brushes.Red;
             if (onebutton)
             {
                 mymed = mashes.GetMedian();
 
-                newstats = new Stats((long)mashes.totalTime, mashes.count, (long)mashes.upTotal, (long) mashes.downTotal, 1, score,mymed);
+                newStats = new Stats(mashes.count/(mashes.totalTime/1000.0), mashes.upTotal/mashes.count, mashes.downTotal/mashes.count, score,1000.00/mymed);
 
             }
             else
@@ -431,44 +460,136 @@ namespace MashAttack
 
                 mymed2 = mashes2.GetMedian();
 
-                newstats = new Stats((long)totaltime, (long)totalmashes, (long)totalup, (long)totaldown, 1, score,Math.Max(mymed,mymed2));
+                newStats = new Stats(totalmashes / (totaltime / 1000.0), totalup / totalmashes, totaldown / totalmashes, score, 1000.00/((mymed+mymed2)/4));
             }
 
-            UpdateStatLabels(newstats);
+            sheets.SaveSession(newStats, usersBox.SelectedValue.ToString(), inputBox.SelectedValue.ToString(), configBox.SelectedValue.ToString());
+            playerStats = sheets.GetPlayer();
+            globalStats = sheets.GetGlobal();
 
+            if (relative)
+            {
+                UpdateStatsRelative();
+            }
+            else
+            {
+                UpdateStatLabels();
+            }
+
+            timerLabel.Visibility = Visibility.Hidden;
             PlotResults(mymed,mymed2);
         }
 
-        private void UpdateStatLabels(Stats newstats)
+        private void UpdateStatsRelative()
         {
-            string player = usersBox.SelectedValue.ToString();
-            string mode = configBox.SelectedValue.ToString();
-            string input = inputBox.SelectedValue.ToString();
+            //Rate
+            statLabels[2, 1].Content = GetDifference(newStats.rate,playerStats.rate) + "%";
+            statLabels[1, 1].Content = FormatStrings(newStats.rate);
+            statLabels[3, 1].Content = GetDifference(newStats.rate, globalStats.rate) + "%";
 
-            newstats.UpdateAll(onebutton, player, mode, input);
+            //Median
+            statLabels[2, 2].Content = GetDifference(newStats.median, playerStats.median) + "%";
+            statLabels[1, 2].Content = FormatStrings(newStats.median);
+            statLabels[3, 2].Content = GetDifference(newStats.median, globalStats.median) + "%";
 
-            Stats playerStats = newstats.GetPlayerData(onebutton, player, mode);
-            Stats globalStats = newstats.GetGlobal(onebutton);
+            //Up
+            statLabels[2, 3].Content = GetDifference(newStats.up, playerStats.up) + "%";
+            statLabels[1, 3].Content = FormatStrings2(newStats.up);
+            statLabels[3, 3].Content = GetDifference(newStats.up, globalStats.up) + "%";
 
-            statLabels[2, 1].Content = FormatStrings(playerStats.totalcount/(playerStats.totaltime/1000.0));
-            statLabels[1, 1].Content = FormatStrings(newstats.totalcount / (newstats.totaltime / 1000.0));
-            statLabels[3, 1].Content = FormatStrings(globalStats.totalcount / (globalStats.totaltime / 1000.0));
+            //Down
+            statLabels[2, 4].Content = GetDifference(newStats.down, playerStats.down) + "%";
+            statLabels[1, 4].Content = FormatStrings2(newStats.down);
+            statLabels[3, 4].Content = GetDifference(newStats.down, globalStats.down) + "%";
 
-            statLabels[2, 3].Content =  (playerStats.totalup)/playerStats.totalcount;
-            statLabels[1, 3].Content =  (newstats.totalup) / newstats.totalcount;
-            statLabels[3, 3].Content =  (globalStats.totalup) / globalStats.totalcount;
+            //Score
+            statLabels[2, 5].Content = GetDifference(newStats.score, playerStats.score) + "%";
+            statLabels[1, 5].Content = FormatStrings2(newStats.score);
+            statLabels[3, 5].Content = GetDifference(newStats.score, globalStats.score) + "%";
 
-            statLabels[2, 4].Content = (playerStats.totaldown) / playerStats.totalcount;
-            statLabels[1, 4].Content =  (newstats.totaldown) / newstats.totalcount;
-            statLabels[3, 4].Content =  (globalStats.totaldown) / globalStats.totalcount;
+            UpdateColors();
+        }
 
-            statLabels[2, 5].Content = playerStats.totalscore / playerStats.totalsessions;
-            statLabels[1,5].Content = newstats.totalscore / newstats.totalsessions;
-            statLabels[3, 5].Content = globalStats.totalscore / globalStats.totalsessions;
+        private void UpdateColors()
+        {
+                //Rate
+                statLabels[2, 1].Foreground = GetColorHigh(newStats.rate, playerStats.rate);
+                statLabels[3, 1].Foreground = GetColorHigh(newStats.rate, globalStats.rate);
 
-            statLabels[2, 2].Content = FormatStrings(1000.00/(playerStats.totalmedian / playerStats.totalsessions));
-            statLabels[1, 2].Content = FormatStrings(1000.00 / (newstats.totalmedian / newstats.totalsessions));
-            statLabels[3, 2].Content = FormatStrings(1000.00 / (globalStats.totalmedian / globalStats.totalsessions));
+                //Median
+                statLabels[2, 2].Foreground = GetColorHigh(newStats.median, playerStats.median);
+                statLabels[3, 2].Foreground = GetColorHigh(newStats.median, globalStats.median);
+
+                //Up
+                statLabels[2, 3].Foreground = GetColorLow(newStats.up, playerStats.up);
+                statLabels[3, 3].Foreground = GetColorLow(newStats.up, globalStats.up);
+
+                //Down
+                statLabels[2, 4].Foreground = GetColorLow(newStats.down, playerStats.down);
+                statLabels[3, 4].Foreground = GetColorLow(newStats.down, globalStats.down);
+
+                //Score
+                statLabels[2, 5].Foreground = GetColorHigh(newStats.score, playerStats.score);
+                statLabels[3, 5].Foreground = GetColorHigh(newStats.score, globalStats.score);
+        }
+
+        private double GetDifference(double val1, double val2)
+        {
+            return Math.Round(((val1 - val2)/val2)*100);
+        }
+
+        private SolidColorBrush GetColorHigh(double val1, double val2)
+        {
+            double myval = Math.Floor(((val1 - val2) / val2) * 100);
+
+            if (myval > 0)
+                return BETTER;
+            else if (myval < 0)
+                return WORSE;
+            else
+                return ZERO;
+        }
+
+        private SolidColorBrush GetColorLow(double val1, double val2)
+        {
+            double myval = Math.Floor(((val1 - val2) / val2) * 100);
+
+            if (myval > 0)
+                return WORSE;
+            else if (myval < 0)
+                return BETTER;
+            else
+                return ZERO;
+        }
+
+        private void UpdateStatLabels()
+        {
+            //Rate
+            statLabels[2, 1].Content = FormatStrings(playerStats.rate);
+            statLabels[1, 1].Content = FormatStrings(newStats.rate);
+            statLabels[3, 1].Content = FormatStrings(globalStats.rate);
+
+            //Median
+            statLabels[2, 2].Content = FormatStrings(playerStats.median);
+            statLabels[1, 2].Content = FormatStrings(newStats.median);
+            statLabels[3, 2].Content = FormatStrings(globalStats.median);
+
+            //Up
+            statLabels[2, 3].Content = FormatStrings2(playerStats.up);
+            statLabels[1, 3].Content = FormatStrings2(newStats.up);
+            statLabels[3, 3].Content = FormatStrings2(globalStats.up);
+
+            //Down
+            statLabels[2, 4].Content = FormatStrings2(playerStats.down);
+            statLabels[1, 4].Content = FormatStrings2(newStats.down);
+            statLabels[3, 4].Content = FormatStrings2(globalStats.down);
+
+            //Score
+            statLabels[2, 5].Content = FormatStrings2(playerStats.score);
+            statLabels[1,5].Content = FormatStrings2(newStats.score);
+            statLabels[3, 5].Content = FormatStrings2(globalStats.score);
+
+            UpdateColors();
         }
 
         private void ClearStats()
@@ -525,6 +646,11 @@ namespace MashAttack
             return String.Format("{0:0.00}", num);
         }
 
+        private string FormatStrings2(double num)
+        {
+            return String.Format("{0:0}", num);
+        }
+
         public void StatsInvoke(MashSet mymashes, MashSet mymashes2)
         {
             this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal,
@@ -563,5 +689,45 @@ namespace MashAttack
             }
             usersBox.SelectedIndex = 0;
         }
+
+        private void relativeItem_Click(object sender, RoutedEventArgs e)
+        {
+            relative = !relative;
+
+            if (relative)
+            {
+                UpdateStatsRelative();
+            }
+            else
+            {
+                UpdateStatLabels();
+            }
+        }
+
+        private void ParseMessage(int code, string message)
+        {
+            switch (code)
+            {
+                case SerialComms.STATUS:
+                    Status(message);
+                    break;
+                case SerialComms.ACTIVE:
+                    Status(message);
+                    Bar(Brushes.Yellow);
+                    break;
+                case SerialComms.MASH:
+                    MashIncrement(Convert.ToInt32(message));
+                    break;
+                case SerialComms.STARTED:
+                    Status(message);
+                    StartCountdown();
+                    break;
+                default:
+                    Status(message);
+                    break;
+            }
+                    
+        }
+
     }
 }
