@@ -57,6 +57,10 @@ namespace MashAttack
         string player = "";
         string mode = "";
         string input = "";
+        string duration = "";
+
+        int button1 = 0;
+        int button2 = 1;
 
         readonly SolidColorBrush BETTER = Brushes.Blue;
         readonly SolidColorBrush WORSE = Brushes.Red;
@@ -158,21 +162,22 @@ namespace MashAttack
             statLabels[3, 0].FontWeight = System.Windows.FontWeights.Bold;
 
             PlayerUpdate();
+            UpdateButtonList();
         }
 
         void updatePortList()
         {
-            comItems.Items.Clear();
+            comItem.Items.Clear();
             MenuItem newItem = new MenuItem();
             newItem.Header = "None";
             newItem.IsCheckable = true;
             newItem.IsChecked = true;
             newItem.Click += new RoutedEventHandler(COMSelect);
-            comItems.Items.Add(newItem);
+            comItem.Items.Add(newItem);
             foreach (string s in SerialPort.GetPortNames())
             {
-                comItems.Items.Add(new MenuItem());
-                newItem = (MenuItem)comItems.Items.GetItemAt(comItems.Items.Count - 1);
+                comItem.Items.Add(new MenuItem());
+                newItem = (MenuItem)comItem.Items.GetItemAt(comItem.Items.Count - 1);
                 newItem.Header = s;
                 newItem.IsCheckable = true;
                 newItem.IsChecked = false;
@@ -189,14 +194,15 @@ namespace MashAttack
         {
             MenuItem tempItem;
 
-            for(int i = 0; i < comItems.Items.Count; i++)
+            for(int i = 0; i < comItem.Items.Count; i++)
             {
-                tempItem = (MenuItem)comItems.Items.GetItemAt(i);
+                tempItem = (MenuItem)comItem.Items.GetItemAt(i);
                 tempItem.IsChecked = false;
             }
 
             tempItem = (MenuItem)sender;
             tempItem.IsChecked = true;
+            comItem.Header = tempItem.Header.ToString();
 
             if(serial!=null)
                 if (serial.isOpen())
@@ -232,43 +238,43 @@ namespace MashAttack
             {
                 case "Standard 1B":
                     serial.Command(10);
-                    serial.Command(0x41);
+                    serial.Command(Config.GetCode(input, button1));
                     //onebutton = true;
                     countdown = 10;
                     break;
                 case "Sprint 1B":
                     serial.Command(5);
-                    serial.Command(0x41);
+                    serial.Command(Config.GetCode(input,button1));
                     //onebutton = true;
                     countdown = 5;
                     break;
                 case "Marathon 1B":
                     serial.Command(30);
-                    serial.Command(0x41);
+                    serial.Command(Config.GetCode(input, button1));
                     //onebutton = true;
                     countdown = 30;
                     break;
                 case "Standard 2B":
                     serial.Command(10);
-                    serial.Command(0xC3);
+                    serial.Command(Config.GetCode(input, button1,button2));
                     //onebutton = false;
                     countdown = 10;
                     break;
                 case "Sprint 2B":
                     serial.Command(5);
-                    serial.Command(0xC3);
+                    serial.Command(Config.GetCode(input, button1, button2));
                     //onebutton = false;
                     countdown = 5;
                     break;
                 case "Marathon 2B":
                     serial.Command(30);
-                    serial.Command(0xC3);
+                    serial.Command(Config.GetCode(input, button1, button2));
                     //onebutton = false;
                     countdown = 30;
                     break;
                 default:
                     serial.Command(10);
-                    serial.Command(0x81);
+                    serial.Command(Config.GetCode(input, button1, button2));
                     //onebutton = true;
                     countdown = 10;
                     break;
@@ -422,7 +428,7 @@ namespace MashAttack
             mashLabel.Visibility = Visibility.Visible;
             mashLabel.Content = "Mashes: 0";
             //scoreLabel.Visibility = Visibility.Hidden;
-            winnerLabel.Content = " ";
+            //winnerLabel.Content = " ";
             ClearStats();
             StartComms();
 
@@ -443,6 +449,8 @@ namespace MashAttack
             mashes2 = newmashes2;
             long mymed = 0;
             long mymed2 = 0;
+
+            Countdown(0);
 
             double score = CalculateScore();
 
@@ -465,7 +473,7 @@ namespace MashAttack
 
                 mymed2 = mashes2.GetMedian();
 
-                newStats = new Stats(Math.Round(totalmashes / (totaltime / 1000.0),3), totalup / totalmashes, totaldown / totalmashes, score, Math.Round(1000.00/((mymed+mymed2)/4),3));
+                newStats = new Stats(Math.Round(totalmashes / (totaltime / 1000.0),3), Math.Round(totalup / totalmashes), Math.Round(totaldown / totalmashes), score, Math.Round(1000.00/((mymed+mymed2)/4),3));
             }
 
             sheets.SaveSession(newStats, usersBox.SelectedValue.ToString(), input, mode);
@@ -492,13 +500,24 @@ namespace MashAttack
             Status(newStats.max + "      " + playerStats.max + "      " + globalStats.max);
             if(Math.Round(globalStats.max,3) == Math.Round(newStats.max,3))
             {
-                winnerLabel.Content = "New Record!";
+                winnerLabel.Content = "New Rate Record!";
                 winnerLabel.Foreground = Brushes.Gold;
             }
             else if(Math.Round(playerStats.max,3) == Math.Round(newStats.max,3))
             {
-                winnerLabel.Content = "New Personal Best!";
+                winnerLabel.Content = "New Rate PB!";
                 winnerLabel.Foreground = Brushes.Green;
+            }
+
+            if (Math.Round(globalStats.maxscore, 3) == Math.Round(newStats.maxscore, 3))
+            {
+                winner2Label.Content = "New Score Record!";
+                winner2Label.Foreground = Brushes.Gold;
+            }
+            else if (Math.Round(playerStats.maxscore, 3) == Math.Round(newStats.maxscore, 3))
+            {
+                winner2Label.Content = "New Score PB!";
+                winner2Label.Foreground = Brushes.Green;
             }
         }
 
@@ -557,7 +576,7 @@ namespace MashAttack
 
         private double GetDifference(double val1, double val2)
         {
-            return Math.Round(((val1 - val2)/val2)*100);
+            return Math.Round(((val1 - val2)/val2)*100,1);
         }
 
         private SolidColorBrush GetColorHigh(double val1, double val2)
@@ -623,6 +642,10 @@ namespace MashAttack
                 {
                     statLabels[i, j].Content = "";
                 }
+
+            winnerLabel.Content = " ";
+            scoreLabel.Content = " ";
+            winner2Label.Content = " ";
         }
 
         private double CalculateScore()
@@ -657,7 +680,7 @@ namespace MashAttack
                 }
             }
 
-            //scoreLabel.Content = String.Format("Score: {0}",score);
+            scoreLabel.Content = String.Format("Score: {0}",score);
             //scoreLabel.Visibility = Visibility.Visible;
 
             return score;
@@ -754,24 +777,125 @@ namespace MashAttack
         private void duration_Checked(object sender, RoutedEventArgs e)
         {
             RadioButton temp= (RadioButton)sender;
-            mode = temp.Content.ToString() + (onebutton ? " 1B" : " 2B");
+            duration = temp.Content.ToString();
 
+            mode = duration + (onebutton ? " 1B" : " 2B");
         }
 
         private void input_Checked(object sender, RoutedEventArgs e)
         {
             RadioButton temp = (RadioButton)sender;
             input = temp.Content.ToString();
+            UpdateButtonList();
         }
 
-        private void button1_Checked(object sender, RoutedEventArgs e)
+        private void UpdateButtonList()
         {
-            onebutton = true;
+            List<string> items;
+            if ((bool)snesRadio.IsChecked)
+            {
+                items = Config.buttons["SNES"];
+            }
+            else if ((bool)nesRadio.IsChecked)
+            {
+                items = Config.buttons["NES"];
+            }
+            else if ((bool)genRadio.IsChecked)
+            {
+                items = Config.buttons["GEN"];
+            }
+            else
+            {
+                items = Config.buttons["ARC"];
+            }
+
+            button1Menu.Items.Clear();
+            button2Menu.Items.Clear();
+            MenuItem tempitem;
+
+            for(int i = 0; i< items.Count; i++)
+            {
+                button1Menu.Items.Add(new MenuItem());
+                tempitem = (MenuItem)button1Menu.Items[i];
+                tempitem.IsCheckable = true;
+                tempitem.Click += ButtonsChanged;
+                tempitem.Header = items[i];
+
+                button2Menu.Items.Add(new MenuItem());
+                tempitem = (MenuItem)button2Menu.Items[i];
+                tempitem.IsCheckable = true;
+                tempitem.Click += ButtonsChanged;
+                tempitem.Header = items[i];
+            }
+
+            tempitem = (MenuItem)button1Menu.Items[0];
+            tempitem.IsChecked = true;
+            button1Menu.Header = tempitem.Header;
+
+            tempitem = (MenuItem)button2Menu.Items[1];
+            tempitem.IsChecked = true;
+            button2Menu.Header = tempitem.Header;
+
+            button1 = 0;
+            button2 = 1;
         }
 
-        private void button2_Checked(object sender, RoutedEventArgs e)
+        private void ButtonsChanged(object sender, RoutedEventArgs e)
         {
-            onebutton = false;
+            MenuItem tempitem = (MenuItem)sender;
+            MenuItem parentitem = (MenuItem)tempitem.Parent;
+
+            for(int i = 0; i < parentitem.Items.Count; i++)
+            {
+                tempitem = (MenuItem)parentitem.Items[i];
+                tempitem.IsChecked = false;
+            }
+
+            tempitem = (MenuItem)sender;
+            tempitem.IsChecked = true;
+
+            int val1 = parentitem.Items.IndexOf(sender);
+
+            tempitem = (MenuItem)button1Menu.Items[val1];
+
+            if (tempitem.IsChecked)
+            {
+                tempitem = (MenuItem)button2Menu.Items[val1];
+                if (tempitem.IsChecked)
+                {
+                    tempitem.IsChecked = false;
+                    int val2 = val1+1;
+
+                    if (val2 == button2Menu.Items.Count)
+                        val2 = 0;
+
+                    button1Menu.Header = tempitem.Header;
+
+                    tempitem = (MenuItem)button2Menu.Items[val2];
+                    tempitem.IsChecked = true;
+                    button2Menu.Header = tempitem.Header;
+
+                    button1 = val1;
+                    button2 = val2;
+
+                    return;
+                }
+            }
+            tempitem = (MenuItem)parentitem.Items[val1];
+
+            parentitem.Header = tempitem.Header;
+
+            if (parentitem == button1Menu)
+                button1 = val1;
+            else
+                button2 = val1;
+        }
+
+        private void twobuttonCheck_Click(object sender, RoutedEventArgs e)
+        {
+            onebutton = !onebutton;
+
+            mode = duration + (onebutton ? " 1B" : " 2B");
         }
     }
 }

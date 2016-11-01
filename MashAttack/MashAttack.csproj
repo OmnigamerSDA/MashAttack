@@ -124,6 +124,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Config.cs" />
     <Compile Include="SheetsAgent.cs" />
     <Compile Include="Stats.cs" />
     <Page Include="MainWindow.xaml">

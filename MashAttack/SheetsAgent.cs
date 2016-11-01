@@ -188,11 +188,11 @@ namespace MashAttack
 
         public Stats GetGlobal()
         {
-            String range = "Search!C20:I20";
+            String range = "Search!C20:J20";
             SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
             Stats mystats = new Stats();
 
-            double[] vals = new double[7];
+            double[] vals = new double[8];
             ValueRange response = request.Execute();
             IList<IList<Object>> values = response.Values;
             int i = 0;
@@ -210,6 +210,7 @@ namespace MashAttack
                         vals[i++] = Convert.ToDouble(row[4]);
                         vals[i++] = Convert.ToDouble(row[5]);
                         vals[i++] = Convert.ToDouble(row[6]);
+                        vals[i++] = Convert.ToDouble(row[7]);
                     }
                 }
             }
@@ -224,17 +225,18 @@ namespace MashAttack
             mystats.up = vals[4];
             mystats.down = vals[5];
             mystats.score = vals[6];
+            mystats.maxscore = vals[7];
 
             return mystats;
         }
 
         public Stats GetPlayer()
         {
-            String range = "Search!C24:I24";
+            String range = "Search!C24:J24";
             SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
             Stats mystats = new Stats();
 
-            double[] vals = new double[7];
+            double[] vals = new double[8];
             ValueRange response = request.Execute();
             IList<IList<Object>> values = response.Values;
             int i = 0;
@@ -252,6 +254,7 @@ namespace MashAttack
                         vals[i++] = Convert.ToDouble(row[4]);
                         vals[i++] = Convert.ToDouble(row[5]);
                         vals[i++] = Convert.ToDouble(row[6]);
+                        vals[i++] = Convert.ToDouble(row[7]);
                     }
                 }
             }
@@ -266,6 +269,31 @@ namespace MashAttack
             mystats.up = vals[4];
             mystats.down = vals[5];
             mystats.score = vals[6];
+            mystats.maxscore = vals[7];
+
+            return mystats;
+        }
+
+        public Stats[] GetBests(string mode)
+        {
+            String range = "'" + mode + "'!Q3:U12";
+            SpreadsheetsResource.ValuesResource.GetRequest request = service.Spreadsheets.Values.Get(spreadsheetId, range);
+            Stats[] mystats = new Stats[10];
+
+            double[,] vals = new double[10,5];
+            ValueRange response = request.Execute();
+            IList<IList<Object>> values = response.Values;
+            int i = 0;
+            for (i = 0; i < 10; i++)
+            {
+                var row = values[i];
+                mystats[i].rate = Convert.ToDouble(row[0]);
+                mystats[i].median = Convert.ToDouble(row[1]);
+                mystats[i].up = Convert.ToDouble(row[2]);
+                mystats[i].down = Convert.ToDouble(row[3]);
+                mystats[i].score = Convert.ToDouble(row[4]);
+
+            }
 
             return mystats;
         }

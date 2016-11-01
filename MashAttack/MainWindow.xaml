@@ -5,11 +5,10 @@
         Title="MashAttack Tester" Height="720" Width="1000">
     <Grid>
         <Frame x:Name="configFrame_Copy1" Content="Statistics" Height="248" Margin="383,56,26,0" VerticalAlignment="Top" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
-        <Frame x:Name="configFrame_Copy3" Content="Input Method" HorizontalAlignment="Left" Height="131" Margin="19,123,0,0" VerticalAlignment="Top" Width="137" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
-        <Frame x:Name="configFrame_Copy2" Content="Duration" HorizontalAlignment="Left" Height="96" Margin="177,158,0,0" VerticalAlignment="Top" Width="151" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
-        <Frame x:Name="configFrame_Copy" Content="Buttons" HorizontalAlignment="Left" Height="82" Margin="177,67,0,0" VerticalAlignment="Top" Width="151" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
+        <Frame x:Name="configFrame_Copy3" Content="Input Method" HorizontalAlignment="Left" Height="131" Margin="19,116,0,0" VerticalAlignment="Top" Width="137" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
+        <Frame x:Name="configFrame_Copy2" Content="Duration" HorizontalAlignment="Left" Height="96" Margin="177,116,0,0" VerticalAlignment="Top" Width="151" BorderBrush="#FF727272" BorderThickness="3" FontSize="20"/>
         <oxy:PlotView x:Name="chart" Margin="10,338,10,27" ClipToBounds="True" FontSize="14"/>
-        <Button x:Name="startButton" Content="Start" Margin="19,260,0,0" VerticalAlignment="Top" Tag="startButton" Height="38" Click="startButton_Click" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" Width="309"/>
+        <Button x:Name="startButton" Content="Start" Margin="19,260,0,0" VerticalAlignment="Top" Tag="startButton" Height="44" Click="startButton_Click" FontSize="24" FontWeight="Bold" HorizontalAlignment="Left" Width="309"/>
         <Grid x:Name="statsGrid" Height="212" Margin="407,77,38,0" VerticalAlignment="Top" ShowGridLines="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="50*"/>
@@ -33,8 +32,7 @@
             <StatusBarItem x:Name="statusLine" Content=" " Height="30" VerticalAlignment="Top" Width="982" FontSize="16" HorizontalContentAlignment="Stretch" HorizontalAlignment="Left" Margin="0,0,0,-4"/>
         </StatusBar>
         <Menu x:Name="menuBar" BorderBrush="Black" BorderThickness="0,0,0,1" Height="39" VerticalAlignment="Top">
-            <MenuItem x:Name="fileItem" Header="File" FontSize="20"/>
-            <MenuItem x:Name="comItems" Header="COM" FontSize="20">
+            <MenuItem x:Name="comItem" Header="COM" FontSize="20">
                 <MenuItem x:Name="noneItem" Header="None" HorizontalAlignment="Left" Width="176" IsCheckable="True" IsChecked="True"/>
             </MenuItem>
             <MenuItem x:Name="updateItem" Header="Update" FontSize="20">
@@ -43,18 +41,23 @@
             </MenuItem>
             <MenuItem Header="Options" FontSize="20">
                 <MenuItem x:Name="relativeItem" Header="Relative Values" HorizontalAlignment="Left" Width="232" IsCheckable="True" Margin="0,0,-56,0" Click="relativeItem_Click"/>
+                <MenuItem x:Name="ledItem" Header="Use LEDs" HorizontalAlignment="Left" Width="176" IsCheckable="True" IsChecked="True"/>
+                <MenuItem x:Name="offlineItem" Header="Offline" HorizontalAlignment="Left" Width="176" IsCheckable="True"/>
             </MenuItem>
+            <MenuItem x:Name="button1Menu" Header="Button 1" FontSize="20"/>
+            <MenuItem x:Name="button2Menu" Header="Button 2" FontSize="20"/>
         </Menu>
-        <ComboBox x:Name="usersBox" HorizontalAlignment="Left" Margin="19,67,0,0" VerticalAlignment="Top" Width="137" Height="35" FontSize="18"/>
-        <RadioButton x:Name="onebuttonRadio" Content="One Button" HorizontalAlignment="Left" Margin="206,95,0,0" VerticalAlignment="Top" FontSize="16" GroupName="buttonsGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsChecked="True" Checked="button1_Checked"/>
-        <RadioButton x:Name="twobuttonRadio" Content="Two Buttons" HorizontalAlignment="Left" Margin="206,117,0,0" VerticalAlignment="Top" FontSize="16" GroupName="buttonsGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="button2_Checked"/>
-        <RadioButton x:Name="sprintRadio" Content="Sprint" HorizontalAlignment="Left" Margin="206,183,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="duration_Checked"/>
-        <RadioButton x:Name="standardRadio" Content="Standard" HorizontalAlignment="Left" Margin="206,204,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsChecked="True" Checked="duration_Checked"/>
-        <RadioButton x:Name="marathonRadio" Content="Marathon" HorizontalAlignment="Left" Margin="206,224,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="duration_Checked"/>
-        <RadioButton x:Name="snesRadio" Content="SNES" HorizontalAlignment="Left" Margin="47,149,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsChecked="True" Checked="input_Checked"/>
-        <RadioButton x:Name="nesRadio" Content="NES" HorizontalAlignment="Left" Margin="48,173,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
-        <RadioButton x:Name="genRadio" Content="GEN" HorizontalAlignment="Left" Margin="47,197,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
-        <RadioButton x:Name="arcRadio" Content="ARC" HorizontalAlignment="Left" Margin="48,221,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
+        <ComboBox x:Name="usersBox" HorizontalAlignment="Left" Margin="19,67,0,0" VerticalAlignment="Top" Width="309" Height="35" FontSize="18"/>
+        <RadioButton x:Name="sprintRadio" Content="Sprint" HorizontalAlignment="Left" Margin="197,140,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="duration_Checked"/>
+        <RadioButton x:Name="standardRadio" Content="Standard" HorizontalAlignment="Left" Margin="197,161,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsChecked="True" Checked="duration_Checked"/>
+        <RadioButton x:Name="marathonRadio" Content="Marathon" HorizontalAlignment="Left" Margin="197,181,0,0" VerticalAlignment="Top" FontSize="16" GroupName="durationGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="duration_Checked"/>
+        <RadioButton x:Name="snesRadio" Content="SNES" HorizontalAlignment="Left" Margin="47,142,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" IsChecked="True" Checked="input_Checked"/>
+        <RadioButton x:Name="nesRadio" Content="NES" HorizontalAlignment="Left" Margin="48,166,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
+        <RadioButton x:Name="genRadio" Content="GEN" HorizontalAlignment="Left" Margin="47,190,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
+        <RadioButton x:Name="arcRadio" Content="ARC" HorizontalAlignment="Left" Margin="48,214,0,0" VerticalAlignment="Top" FontSize="16" GroupName="inputGroup" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Checked="input_Checked"/>
         <Label x:Name="winnerLabel" Content=" " HorizontalAlignment="Left" Height="42" Margin="548,333,0,0" VerticalAlignment="Top" Width="308" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+        <Label x:Name="scoreLabel" Content=" " Margin="10,333,0,0" HorizontalAlignment="Left" Width="300" FontSize="24" Height="42" VerticalAlignment="Top"/>
+        <Label x:Name="winner2Label" Content=" " HorizontalAlignment="Left" Height="42" Margin="148,333,0,0" VerticalAlignment="Top" Width="308" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center"/>
+        <CheckBox x:Name="twobuttonCheck" Content="Two Buttons" HorizontalAlignment="Left" Margin="177,218,0,0" VerticalAlignment="Top" Height="29" Width="151" FontSize="20" VerticalContentAlignment="Center" Click="twobuttonCheck_Click"/>
     </Grid>
 </Window>

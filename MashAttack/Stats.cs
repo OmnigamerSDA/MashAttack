@@ -17,6 +17,7 @@ namespace MashAttack
         public double median = 0;
         public double rate = 0;
         public double max = 0;
+        public double maxscore = 0;
 
         public Stats()
         {
@@ -34,6 +35,7 @@ namespace MashAttack
             median = newmedian;
             rate = newrate;
             max = rate;
+            maxscore = score;
         }
 
         //public void UpdateAll(bool onebutton, string player, string mode, string input)
