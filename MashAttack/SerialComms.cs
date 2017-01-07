@@ -24,6 +24,7 @@ namespace MashAttack
         public const byte DOWNTIME = 0x66;
         public const byte UPTIME = 0x77;
         public const byte FINISHED = 0x33;
+        public const byte LEDS = 0xCC;
 
         public const int STATUS = 10;
         public const int ACTIVE = 20;
@@ -33,7 +34,7 @@ namespace MashAttack
 
         SerialPort _datPort;
         int playerNum = 0;
-        MainWindow main;
+        AttackWindow main;
 
         MashSet mashes;
         MashSet mashes2;

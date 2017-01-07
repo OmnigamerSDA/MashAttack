@@ -39,7 +39,7 @@ namespace MashAttack
             //UserCredential credential;
             Console.WriteLine("Starting creds");
             using (var stream =
-                new FileStream("M:\\Dropbox\\mash_secret.json", FileMode.Open, FileAccess.Read))
+                new FileStream("C:\\MashAttack\\mash_secret.json", FileMode.Open, FileAccess.Read))
             {
                 Console.WriteLine("Setting credpath");
                 string credPath = System.Environment.GetFolderPath(
@@ -89,6 +89,21 @@ namespace MashAttack
             }
 
             return null;
+
+        }
+
+        public void AddUsername(String newname)
+        {
+            String range = "Responses!A1:B1";
+            ValueRange myvalues = new ValueRange();
+            myvalues.MajorDimension = "ROWS";
+            //myvalues.Range = range;
+            var oblist = new List<object>() { System.DateTime.Now, newname };
+            myvalues.Values = new List<IList<object>> { oblist };
+            SpreadsheetsResource.ValuesResource.AppendRequest request = service.Spreadsheets.Values.Append(myvalues, spreadsheetId, range);
+
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.AppendRequest.ValueInputOptionEnum.USERENTERED;
+            request.Execute();
 
         }
 

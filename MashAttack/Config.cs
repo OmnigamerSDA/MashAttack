@@ -9,7 +9,7 @@ namespace MashAttack
     static class Config
     {
         static List<string> snesbuttons = new List<string> { "B", "Y", "A", "X", "L", "R" };
-        static List<string> nesbuttons = new List<string> { "B", "A", "Select", "Start"};
+        static List<string> nesbuttons = new List<string> { "A", "B", "Select", "Start"};
         static List<string> genbuttons = new List<string> { "B", "C", "A", "Start"};
         static List<string> arcbuttons = new List<string> { "Left", "Right" };
 

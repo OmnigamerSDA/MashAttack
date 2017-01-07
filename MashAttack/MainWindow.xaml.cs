@@ -27,8 +27,10 @@ namespace MashAttack
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class AttackWindow : Window
     {
+        PlayerForm subForm;
+
         DispatcherTimer myTimer;
         DispatcherTimer updateTimer;
         bool mashEnabled;
@@ -46,7 +48,7 @@ namespace MashAttack
         const bool kb_mode = false;
         const int BAUD_RATE = 115200;
         bool timeout = false;
-        const int PERIOD = 2;
+        const int PERIOD = 10;
         long downval = 0;
         long downval2 = 0;
         bool onebutton = true;
@@ -78,12 +80,12 @@ namespace MashAttack
 
         const byte SPINUP_SUCCESS = 128;
         const byte SPINUP_FAIL = 64;
-        const byte ABORT = 255;
+        const byte ABORT = 0xFF;
         const byte START = 0xAA;
 
         //private delegate void UpdateStatsDel();
 
-        public MainWindow()
+        public AttackWindow()
         {
             InitializeComponent();
             //OxyPlot.Model
@@ -207,14 +209,22 @@ namespace MashAttack
             if(serial!=null)
                 if (serial.isOpen())
                     serial.Close();
-            if (tempItem.Header.ToString() != "None")
+
+            try
             {
-                serial = new SerialComms(tempItem.Header.ToString(), BAUD_RATE, PERIOD, ParseMessage, StatsInvoke);
-                //serial.StatusDelegate = Status;
-                //serial.BarDelegate = Bar;
-                //serial.CountdownDelegate = StartCountdown;
-                //serial.UpdateDelegate = StatsInvoke;
-                //serial.MashDelegate = MashIncrement;
+                if (tempItem.Header.ToString() != "None")
+                {
+                    serial = new SerialComms(tempItem.Header.ToString(), BAUD_RATE, PERIOD, ParseMessage, StatsInvoke);
+                    //serial.StatusDelegate = Status;
+                    //serial.BarDelegate = Bar;
+                    //serial.CountdownDelegate = StartCountdown;
+                    //serial.UpdateDelegate = StatsInvoke;
+                    //serial.MashDelegate = MashIncrement;
+                }
+            }
+            catch
+            {
+                Status("Failed to open Port! Is it already in use?");
             }
             //comString = tempItem.Header.ToString();
 
@@ -408,6 +418,10 @@ namespace MashAttack
             chart.Model.DefaultYAxis.MinorStep = 1;
             chart.Model.DefaultYAxis.Minimum = 0;
             chart.Model.DefaultYAxis.Maximum = 20;
+            chart.Model.DefaultYAxis.TitleFontSize = 24;
+            chart.Model.DefaultXAxis.TitleFontSize = 24;
+            chart.Model.DefaultYAxis.FontSize = 18;
+            chart.Model.DefaultXAxis.FontSize = 18;
             chart.Model.ResetAllAxes();
             
             chart.UpdateLayout();
@@ -467,7 +481,7 @@ namespace MashAttack
                 double totalmashes = mashes.count + mashes2.count;
                 double totaltime = Math.Max(mashes.totalTime, mashes2.totalTime);
                 double totalup = mashes.upTotal + mashes2.upTotal;
-                double totaldown = mashes.upTotal + mashes2.upTotal;
+                double totaldown = mashes.downTotal + mashes2.downTotal;
 
                 mymed = mashes.GetMedian();
 
@@ -501,7 +515,7 @@ namespace MashAttack
             if(Math.Round(globalStats.max,3) == Math.Round(newStats.max,3))
             {
                 winnerLabel.Content = "New Rate Record!";
-                winnerLabel.Foreground = Brushes.Gold;
+                winnerLabel.Foreground = Brushes.DarkGoldenrod;
             }
             else if(Math.Round(playerStats.max,3) == Math.Round(newStats.max,3))
             {
@@ -512,7 +526,7 @@ namespace MashAttack
             if (Math.Round(globalStats.maxscore, 3) == Math.Round(newStats.maxscore, 3))
             {
                 winner2Label.Content = "New Score Record!";
-                winner2Label.Foreground = Brushes.Gold;
+                winner2Label.Foreground = Brushes.DarkGoldenrod;
             }
             else if (Math.Round(playerStats.maxscore, 3) == Math.Round(newStats.maxscore, 3))
             {
@@ -896,6 +910,40 @@ namespace MashAttack
             onebutton = !onebutton;
 
             mode = duration + (onebutton ? " 1B" : " 2B");
+        }
+
+        private void ledItem_Click(object sender, RoutedEventArgs e)
+        {
+            if(serial!= null)
+                if(serial.isOpen())
+                    serial.Command(SerialComms.LEDS);
+        }
+
+        private void newplayerItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (subForm == null || !subForm.IsLoaded)
+            {
+                subForm = new PlayerForm(this);
+                subForm.Show();
+            }
+        }
+
+        public void AddPlayer(string newname)
+        {
+            sheets.AddUsername(newname);
+            PlayerUpdate();
+            usersBox.Text = newname;
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (subForm != null)
+                subForm.Close();
+        }
+
+        private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            banner.Source = new BitmapImage(new Uri("C:\\MashAttack\\mash-01.png", UriKind.Absolute));
         }
     }
 }

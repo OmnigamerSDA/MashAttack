@@ -1,0 +1,15 @@
+﻿<Window x:Class="MashAttack.PlayerForm"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MashAttack"
+        mc:Ignorable="d"
+        Title="PlayerForm" Height="138.42" Width="405.566">
+    <Grid>
+        <TextBox x:Name="nameBox" HorizontalAlignment="Left" Height="30" Margin="27,50,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="229" FontSize="20"/>
+        <Button x:Name="addButton" Content="Add Player" HorizontalAlignment="Left" Margin="268,50,0,0" VerticalAlignment="Top" Width="120" Height="30" FontSize="20" Click="addButton_Click"/>
+        <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Height="25" Margin="27,20,0,0" TextWrapping="Wrap" Text="Enter a new username below!" VerticalAlignment="Top" Width="284" FontSize="20"/>
+
+    </Grid>
+</Window>
